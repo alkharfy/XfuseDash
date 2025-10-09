@@ -10,10 +10,9 @@ import { File, Loader2, Sparkles, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { useUploadFile } from "@/hooks/use-storage";
 import { updateDocumentNonBlocking, useFirestore, useFirebaseApp } from "@/firebase";
 import { arrayUnion, doc } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, UploadTask } from 'firebase/storage';
 
 const categoryTranslations: Record<MarketResearchFileCategory, string> = {
     creative: "كريتيف",
@@ -23,77 +22,72 @@ const categoryTranslations: Record<MarketResearchFileCategory, string> = {
     client: "عميل",
 };
 
-const FileUploadArea = ({ 
-    category, 
-    label, 
-    onFileSelect, 
-    isUploading,
-    progress
-}: { 
-    category: MarketResearchFileCategory, 
-    label: string, 
-    onFileSelect: (category: MarketResearchFileCategory, file: File) => void,
-    isUploading: boolean,
-    progress: number
+const FileUploadArea = ({
+  category,
+  label,
+  clientId,
+}: {
+  category: MarketResearchFileCategory;
+  label: string;
+  clientId: string;
 }) => {
-    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            onFileSelect(category, file);
+  const { user } = useAuthStore();
+  const { toast } = useToast();
+  const firebaseApp = useFirebaseApp();
+  const firestore = useFirestore();
+  const storage = getStorage(firebaseApp);
+
+  const [isUploading, setIsUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  const uploadFile = (filePath: string, file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const storageRef = ref(storage, filePath);
+      const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
+
+      setIsUploading(true);
+
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const currentProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setProgress(currentProgress);
+        },
+        (error) => {
+          console.error("Upload failed:", error);
+          setIsUploading(false);
+          reject(error);
+        },
+        async () => {
+          try {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            setIsUploading(false);
+            setProgress(100);
+            resolve(downloadURL);
+          } catch (e) {
+            console.error("Could not get download URL:", e);
+            setIsUploading(false);
+            reject(e);
+          }
         }
-    };
-    
-    const inputId = `file-upload-${category}`;
+      );
+    });
+  };
 
-    return (
-        <div className="p-4 border-2 border-dashed rounded-lg text-center space-y-2 relative">
-            {isUploading ? (
-                <>
-                    <Loader2 className="mx-auto h-8 w-8 text-muted-foreground animate-spin" />
-                    <h4 className="font-semibold">جاري رفع ملف لـ {label}...</h4>
-                    <Progress value={progress} className="w-full" />
-                    <p className="text-sm text-muted-foreground">{Math.round(progress)}%</p>
-                </>
-            ) : (
-                 <>
-                    <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                    <h4 className="font-semibold">ملف موجه لـ {label}</h4>
-                    <Input type="file" className="hidden" id={inputId} onChange={handleFileChange} />
-                    <Button asChild variant="outline" size="sm">
-                        <label htmlFor={inputId}>تصفح الملفات</label>
-                    </Button>
-                 </>
-            )}
-        </div>
-    );
-};
-
-
-export function MarketResearchSection({ client }: { client: Client }) {
-    const { user, role } = useAuthStore();
-    const [summary, setSummary] = useState(client.marketResearchSummary || "");
-    const [isSummarizing, startSummarizeTransition] = useTransition();
-    const { toast } = useToast();
-    const firebaseApp = useFirebaseApp();
-    const firestore = useFirestore();
-    const storage = getStorage(firebaseApp);
-    const { uploadFile, isUploading, progress, error } = useUploadFile();
-    const [uploadingCategory, setUploadingCategory] = useState<MarketResearchFileCategory | null>(null);
-
-
-    const handleFileSelect = async (category: MarketResearchFileCategory, file: File) => {
-        if (!user) {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+       if (!user) {
             toast({ variant: "destructive", title: "خطأ", description: "يجب أن تكون مسجلاً للدخول لرفع الملفات." });
             return;
         }
-
-        setUploadingCategory(category);
-        const filePath = `${client.id}/${file.name}`;
+        
+        const filePath = `${clientId}/${file.name}`;
         
         try {
             const downloadURL = await uploadFile(filePath, file);
             
-            const clientRef = doc(firestore, "clients", client.id);
+            const clientRef = doc(firestore, "clients", clientId);
             const newFile: any = {
                 fileName: file.name,
                 fileUrl: downloadURL,
@@ -109,11 +103,42 @@ export function MarketResearchSection({ client }: { client: Client }) {
             toast({ title: "نجاح", description: `تم رفع الملف "${file.name}" بنجاح.` });
         } catch (uploadError) {
              toast({ variant: "destructive", title: "خطأ في الرفع", description: (uploadError as Error).message });
-        } finally {
-            setUploadingCategory(null);
         }
-    };
+    }
+  };
     
+  const inputId = `file-upload-${category}`;
+
+  return (
+    <div className="p-4 border-2 border-dashed rounded-lg text-center space-y-2 relative">
+      {isUploading ? (
+        <>
+          <Loader2 className="mx-auto h-8 w-8 text-muted-foreground animate-spin" />
+          <h4 className="font-semibold">جاري رفع ملف لـ {label}...</h4>
+          <Progress value={progress} className="w-full" />
+          <p className="text-sm text-muted-foreground">{Math.round(progress)}%</p>
+        </>
+      ) : (
+        <>
+          <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+          <h4 className="font-semibold">ملف موجه لـ {label}</h4>
+          <Input type="file" className="hidden" id={inputId} onChange={handleFileChange} />
+          <Button asChild variant="outline" size="sm">
+            <label htmlFor={inputId}>تصفح الملفات</label>
+          </Button>
+        </>
+      )}
+    </div>
+  );
+};
+
+
+export function MarketResearchSection({ client }: { client: Client }) {
+    const { role } = useAuthStore();
+    const [summary, setSummary] = useState(client.marketResearchSummary || "");
+    const [isSummarizing, startSummarizeTransition] = useTransition();
+    const { toast } = useToast();
+
     const handleSummarize = (fileName: string) => {
         startSummarizeTransition(async () => {
             const result = await getSummaryForResearchFile(fileName, client.id);
@@ -142,9 +167,7 @@ export function MarketResearchSection({ client }: { client: Client }) {
                                 key={category}
                                 category={category} 
                                 label={categoryTranslations[category]}
-                                onFileSelect={handleFileSelect}
-                                isUploading={uploadingCategory === category}
-                                progress={uploadingCategory === category ? progress : 0}
+                                clientId={client.id}
                             />
                         ))}
                     </div>
