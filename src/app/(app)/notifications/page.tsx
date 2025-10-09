@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuthStore } from "@/hooks/use-auth";
 import { mockNotifications as initialMockNotifications } from "@/lib/data";
 import { Bell, Check, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +10,7 @@ import { formatTimestamp } from "@/lib/utils";
 import type { Notification } from "@/lib/types";
 
 export default function NotificationsPage() {
-    const { user } = useAuth();
+    const { user } = useAuthStore();
     
     const [notifications, setNotifications] = useState<Notification[]>(
         user ? initialMockNotifications.filter(n => n.userId === user.uid) : []
