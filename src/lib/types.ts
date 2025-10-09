@@ -8,6 +8,13 @@ export interface User {
   createdAt: any; // Firestore Timestamp
   active: boolean;
   avatarUrl?: string;
+  phone?: string;
+  address?: string;
+  courses?: string[];
+  salary?: number;
+  attendanceDays?: number;
+  absenceDays?: number;
+  directManagerId?: string; // userId of direct manager
 }
 
 export interface Client {

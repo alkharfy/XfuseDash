@@ -31,6 +31,37 @@
         "active": {
           "type": "boolean",
           "description": "Indicates whether the user account is active."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the user."
+        },
+        "address": {
+          "type": "string",
+          "description": "Address of the user."
+        },
+        "courses": {
+          "type": "array",
+          "description": "List of courses the user is supposed to take.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "salary": {
+          "type": "number",
+          "description": "Salary of the user."
+        },
+        "attendanceDays": {
+          "type": "number",
+          "description": "Number of attendance days."
+        },
+        "absenceDays": {
+          "type": "number",
+          "description": "Number of absence days."
+        },
+        "directManagerId": {
+          "type": "string",
+          "description": "The user ID of the direct manager."
         }
       },
       "required": [
