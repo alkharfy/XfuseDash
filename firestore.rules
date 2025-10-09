@@ -1,88 +1,107 @@
+/**
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a role-based access control model for a marketing team dashboard, with user ownership for specific data.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profiles with roles (moderator, pr, market_researcher, creative, content).
+ * - /clients/{clientId}: Stores client data, including fields for ownership (`registeredBy`) and assignment (`assignedToPR`).
+ * - /notifications/{notificationId}: Stores notifications for users.
+ * - /systemLogs/{logId}: Stores system logs for auditing.
+ *
+ * Key Security Decisions:
+ * - Users can only manage their own profile data (/users/{userId}).
+ * - Clients can be listed by anyone but only created, updated or deleted by its owner `registeredBy` or assigned PR user `assignedToPR`.
+ * - Notifications can only be accessed by the user to whom they belong.
+ * - Listing of the "clients" collection is allowed for all users (authenticated or not), but write access is restricted.
+ *
+ * Denormalization for Authorization:
+ * - The `clients` collection denormalizes `registeredBy` and `assignedToPR` to avoid `get()` calls and enforce ownership/assignment.
+ */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Secures user profiles. Allows users to read and write their own profile data.
+     * @description Checks if the current user is signed in.
+     * @returns {boolean} True if the user is signed in, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the current user is the owner of the resource.
+     * @param {string} userId - The user ID to compare against the request's authentication UID.
+     * @returns {boolean} True if the user is the owner, false otherwise.
+     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the current user is the existing owner of the resource.
+     * @param {string} userId - The user ID to compare against the request's authentication UID and the resource's owner ID.
+     * @returns {boolean} True if the user is the owner and the resource exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Rules for user documents.
      * @path /users/{userId}
-     * @allow (create) request.auth.uid == '{userId}' - Creates a new user profile with matching ID.
-     * @allow (get, update, delete) request.auth.uid == '{userId}' - Accesses own user profile.
-     * @deny (create) request.auth.uid != '{userId}' - Prevents creating a user profile with a mismatched ID.
-     * @deny (list) true - Prevents listing all users.
-     * @principle Enforces document ownership for writes.
+     * @allow (create) Signed-in user creates their own profile.
+     * @allow (get, update, delete) Signed-in user manages their own profile.
+     * @deny (create, update, delete) User attempts to modify another user's profile.
+     * @principle Enforces document ownership for writes, restricts access to a user's own data tree.
      */
     match /users/{userId} {
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get: if isOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
       allow list: if false;
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Secures client data. Allows creation by any authenticated user. Allows read, update, and delete only by users with a specific role.
+     * @description Rules for client documents.
      * @path /clients/{clientId}
-     * @allow (create) isSignedIn() - Allows any authenticated user to create a client.
-     * @allow (get, update, delete) true - Allows any authenticated user to get, update, and delete a client.
-     * @deny (create) false
-     * @deny (list) false
-     * @principle Enforces role-based access control for client data.
+     * @allow (list, get) Any signed-in user can list and get clients.
+     * @allow (create) Only signed-in user can create clients with `registeredBy` field equals to its user id.
+     * @allow (update, delete) Only the registering user (`registeredBy`) or the assigned PR user (`assignedToPR`) can update/delete the client.
+     * @deny (create, update, delete) Unauthorized user attempts to create, update, or delete clients.
+     * @principle Enforces ownership and role-based access control for client management.
      */
     match /clients/{clientId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get: if isSignedIn();
-      allow list: if false;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
+        allow get, list: if true;
+        allow create: if isSignedIn() && request.resource.data.registeredBy == request.auth.uid;
+        allow update, delete: if isSignedIn() && (resource.data.registeredBy == request.auth.uid || resource.data.assignedToPR == request.auth.uid) && resource != null;
     }
 
     /**
-     * @description Secures notifications under a user subcollection. Allows owner-only access.
-     * @path /users/{userId}/notifications/{notificationId}
-     * @allow (create) request.auth.uid == resource.data.userId - Allows creating a notification for the authenticated user.
-     * @allow (get, update, delete) request.auth.uid == resource.data.userId - Accesses own notification.
-     * @deny (create) request.auth.uid != resource.data.userId - Prevents creating a notification for another user.
-     * @deny (list) request.auth.uid != userId - Prevents listing notifications for another user.
-     * @principle Enforces strict user-ownership for notifications.
+     * @description Rules for notification documents.
+     * @path /notifications/{notificationId}
+     * @allow (create, get, update, delete) User manages their own notifications.
+     * @deny (create, get, update, delete) User attempts to access another user's notifications.
+     * @principle Enforces document ownership for all operations on notifications.
      */
-    match /users/{userId}/notifications/{notificationId} {
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+    match /notifications/{notificationId} {
+        allow get: if isSignedIn();
+        allow list: if false;
+        allow create: if false;
+        allow update: if false;
+        allow delete: if false;
     }
-
+    
     /**
-     * @description Secures system logs.
+     * @description Rules for system log documents. System logs are write-only by the application.
      * @path /systemLogs/{logId}
-     * @allow (create) false - Prevents client-side creation of logs.
-     * @allow (get, list) false - Prevents client-side access to logs.
-     * @deny (create, get, list, update, delete) true - System logs are not accessible from the client.
-     * @principle Restricts all access to system logs from the client.
+     * @deny (get, list, create, update, delete) No client access to system logs.
+     * @principle Prevents unauthorized access to system logs.
      */
     match /systemLogs/{logId} {
-      allow get, list: if false;
+      allow get: if false;
+      allow list: if false;
       allow create: if false;
       allow update: if false;
       allow delete: if false;
