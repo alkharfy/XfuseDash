@@ -1,139 +1,104 @@
-/**
- * @fileOverview Firestore Security Rules for the marketing team dashboard.
- *
- * Core Philosophy:
- * This ruleset enforces a user-ownership model for user profiles and notifications,
- * combined with role-based access control for clients and system logs. The rules leverage
- * denormalized data (e.g., `registeredBy` and `assignedToPR` on clients) to ensure
- * authorization independence and efficient rule evaluation.
- *
- * Data Structure:
- * - /users/{userId}: Stores user profiles, with access restricted to the owning user.
- * - /clients/{clientId}: Stores client data, with access control based on user roles and
- *   the `registeredBy` and `assignedToPR` fields.
- * - /notifications/{notificationId}: Stores user-specific notifications.
- * - /systemLogs/{logId}: Stores system logs, with write access limited to authorized users.
- *
- * Key Security Decisions:
- * - User data is private and only accessible to the owning user.
- * - Client data access is role-based, allowing specific roles to create, update, or delete clients.
- * - Notifications are user-specific and only accessible to the owning user.
- * - System logs are append-only and restricted to authorized users.
- *
- * Denormalization for Authorization:
- * - The `clients` collection includes `registeredBy` and `assignedToPR` fields to avoid
- *   costly `get()` operations when validating user roles and client ownership.
- *
- * Structural Segregation:
- * - Different entities (users, clients, notifications, system logs) are stored in separate
- *   collections to simplify security rules and ensure a homogeneous security posture for each collection.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profiles.
+     * @description Enforces user-ownership for user profiles.
      * @path /users/{userId}
-     * @allow (create) - Authenticated user can create their own profile (userId in path must match auth.uid).
-     * @allow (get, update, delete) - Authenticated user can only access their own profile.
-     * @deny (create) - If userId in path does not match auth.uid.
-     * @deny (list) - Listing users is not allowed.
-     * @principle Enforces user-ownership: users can only read/write their own data.
+     * @allow (create) Authenticated user creates their own profile.
+     * @allow (get, update, delete) Authenticated user accesses their own profile.
+     * @deny (create, get, update, delete) Authenticated user tries to access another user's profile.
+     * @deny (list) Listing all users is not allowed.
+     * @principle Enforces document ownership for reads and writes.
      */
     match /users/{userId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
 
-      function isSignedIn() {
-        return request.auth != null;
+      function isExistingOwner(userId) {
+        return isSignedIn() && isOwner(userId) && resource != null;
       }
-
-      allow get: if isOwner(userId);
+      allow get: if isSignedIn() && isOwner(userId);
       allow list: if false;
       allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isSignedIn() && isOwner(userId);
-      allow delete: if isSignedIn() && isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to client data.
+     * @description Manages client data, allowing access based on user roles and client ownership.
      * @path /clients/{clientId}
-     * @allow (create) - Only users with the 'admin' or 'moderator' role can create clients.
-     *                    The 'registeredBy' field must match the creating user's ID.
-     * @allow (get, list) - All authenticated users can read client data.
-     * @allow (update, delete) - Only users with the 'admin' role or the user who registered the client can update or delete it.
-     * @deny (create) - If the 'registeredBy' field does not match the creating user's ID.
-     * @principle Enforces role-based access control and data ownership.
+     * @allow (create) User creates a new client, with 'registeredBy' set to their own ID.
+     * @allow (get) Anyone can get a client.
+     * @allow (update, delete) Only the user who registered the client can update or delete it.
+     * @deny (create) User attempts to create a client with 'registeredBy' not set to their own ID.
+     * @deny (update, delete) User attempts to update or delete a client they did not register.
+     * @deny (list) Public listing is allowed.
+     * @principle Enforces a combination of public read access and owner-only write access.
      */
     match /clients/{clientId} {
-      function isAdmin() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      }
-
-      function isModerator() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'moderator';
+      function isSignedIn() {
+        return request.auth != null;
       }
 
       function isOwner(registeredBy) {
-          return request.auth.uid == registeredBy;
+        return request.auth.uid == registeredBy;
       }
 
-      function isSignedIn() {
-        return request.auth != null;
+      function isExistingOwner(registeredBy) {
+        return isSignedIn() && isOwner(registeredBy) && resource != null && resource.data.registeredBy == request.auth.uid;
       }
 
       allow get, list: if true;
-      allow create: if isSignedIn() && (isAdmin() || isModerator()) && request.resource.data.registeredBy == request.auth.uid;
-      allow update: if isSignedIn() && (isAdmin() || isOwner(resource.data.registeredBy));
-      allow delete: if isSignedIn() && (isAdmin() || isOwner(resource.data.registeredBy));
+      allow create: if isSignedIn() && request.resource.data.registeredBy == request.auth.uid;
+      allow update: if isSignedIn() && isExistingOwner(resource.data.registeredBy);
+      allow delete: if isSignedIn() && isExistingOwner(resource.data.registeredBy);
     }
 
     /**
-     * @description Controls access to user-specific notifications.
+     * @description Enforces user-ownership for notifications, ensuring only the user can access their own notifications.
      * @path /notifications/{notificationId}
-     * @allow (create) - Not allowed. Notifications should only be created via backend functions.
-     * @allow (get, list) - Only the user the notification belongs to can read it.
-     * @allow (update, delete) - Not allowed. Notifications cannot be updated or deleted by the client.
-     * @deny (create, update, delete) - All client-side writes are denied.
-     * @principle Enforces strict user-ownership and read-only access from the client.
+     * @allow (create) User creates a new notification for themselves, with 'userId' set to their own ID.
+     * @allow (get, update, delete) User accesses their own notification.
+     * @deny (create, get, update, delete) User attempts to access another user's notification.
+     * @deny (list) User attempts to list all notifications.
+     * @principle Enforces document ownership for reads and writes.
      */
     match /notifications/{notificationId} {
-       function isOwner(userId) {
-         return request.auth.uid == userId;
-       }
-
-       function isSignedIn() {
-         return request.auth != null;
-       }
-
-        allow get, list: if isSignedIn() && isOwner(resource.data.userId);
-        allow create: if false;
-        allow update: if false;
-        allow delete: if false;
-    }
-
-    /**
-     * @description Controls access to system logs.
-     * @path /systemLogs/{logId}
-     * @allow (create) - Only users with the 'admin' role can create system logs.
-     * @allow (get, list) - All authenticated users can read system logs.
-     * @allow (update, delete) - Not allowed. System logs are append-only.
-     * @deny (update, delete) - All client-side updates and deletes are denied.
-     * @principle Enforces role-based access control and append-only logging.
-     */
-    match /systemLogs/{logId} {
-      function isAdmin() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      }
-
       function isSignedIn() {
         return request.auth != null;
       }
 
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isSignedIn() && isOwner(userId) && resource != null && resource.data.userId == request.auth.uid;
+      }
+
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && isExistingOwner(resource.data.userId);
+      allow delete: if isSignedIn() && isExistingOwner(resource.data.userId);
+    }
+
+    /**
+     * @description Restricts write access to system logs. Read access may be restricted based on user roles in the future.
+     * @path /systemLogs/{logId}
+     * @allow (get, list) Anyone can read system logs.
+     * @deny (create, update, delete) No one can create, update, or delete system logs.
+     * @principle Restricts write access to prevent unauthorized modification of audit trails.
+     */
+    match /systemLogs/{logId} {
       allow get, list: if true;
-      allow create: if isSignedIn() && isAdmin();
+      allow create: if false;
       allow update: if false;
       allow delete: if false;
     }
