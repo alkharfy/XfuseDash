@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { Sidebar, SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import Header from '@/components/layout/header';
 import SidebarNav from '@/components/layout/sidebar-nav';
 import { Loader2 } from 'lucide-react';
@@ -50,15 +50,15 @@ export default function AppLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen">
+      <Sidebar>
         <SidebarNav />
-        <main className="flex-1 flex flex-col">
-          <Header />
-          <div className="flex-1 p-4 sm:p-6 md:p-8 bg-background">
-            {children}
-          </div>
+      </Sidebar>
+      <SidebarInset>
+        <Header />
+        <main className="flex-1 p-4 sm:p-6 md:p-8 bg-background">
+          {children}
         </main>
-      </div>
+      </SidebarInset>
     </SidebarProvider>
   );
 }
