@@ -10,6 +10,27 @@ import { File, Loader2, Sparkles, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
+import { MarketResearchFileCategory } from "@/lib/types";
+
+const categoryTranslations: Record<MarketResearchFileCategory, string> = {
+    creative: "كريتيف",
+    copywriter: "كوبي رايتر",
+    media_buyer: "ميديا باير",
+    manager: "مدير",
+    client: "عميل",
+};
+
+const FileUploadArea = ({ category, label }: { category: MarketResearchFileCategory, label: string }) => (
+    <div className="p-4 border-2 border-dashed rounded-lg text-center space-y-2">
+        <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+        <h4 className="font-semibold">ملف موجه لـ {label}</h4>
+        <Input type="file" className="hidden" id={`file-upload-${category}`}/>
+        <Button asChild variant="outline" size="sm">
+            <label htmlFor={`file-upload-${category}`}>تصفح الملفات</label>
+        </Button>
+    </div>
+);
+
 
 export function MarketResearchSection({ client }: { client: Client }) {
     const { role } = useAuthStore();
@@ -37,14 +58,12 @@ export function MarketResearchSection({ client }: { client: Client }) {
             </CardHeader>
             <CardContent className="space-y-6">
                 {(role === 'market_researcher' || role === 'moderator') && (
-                    <div className="p-4 border-2 border-dashed rounded-lg text-center space-y-2">
-                        <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-                        <h4 className="font-semibold">ارفع ملفات البحث</h4>
-                        <p className="text-sm text-muted-foreground">اسحب وأفلت الملفات هنا أو اضغط للتصفح</p>
-                        <Input type="file" className="hidden" id="file-upload"/>
-                        <Button asChild variant="outline">
-                            <label htmlFor="file-upload">تصفح الملفات</label>
-                        </Button>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <FileUploadArea category="creative" label="الكريتفز" />
+                        <FileUploadArea category="copywriter" label="الكوبي رايتر" />
+                        <FileUploadArea category="media_buyer" label="الميديا باير" />
+                        <FileUploadArea category="manager" label="المدير" />
+                        <FileUploadArea category="client" label="العميل" />
                     </div>
                 )}
 
@@ -56,6 +75,7 @@ export function MarketResearchSection({ client }: { client: Client }) {
                                 <div className="flex items-center gap-2">
                                     <File className="h-4 w-4 text-muted-foreground" />
                                     <span>{file.fileName}</span>
+                                    {file.category && <span className="text-xs text-muted-foreground">({categoryTranslations[file.category] || file.category})</span>}
                                 </div>
                                 {(role === 'market_researcher' || role === 'moderator') && (
                                     <Button size="sm" onClick={() => handleSummarize(file.fileName)} disabled={isPending}>

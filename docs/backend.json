@@ -177,7 +177,15 @@
           "type": "array",
           "description": "File list for market research.",
           "items": {
-            "type": "string"
+            "type": "object",
+            "properties": {
+              "fileName": { "type": "string" },
+              "fileUrl": { "type": "string" },
+              "uploadedAt": { "type": "string", "format": "date-time" },
+              "uploadedBy": { "type": "string" },
+              "category": { "type": "string", "enum": ["creative", "copywriter", "media_buyer", "manager", "client"] }
+            },
+            "required": ["fileName", "fileUrl", "uploadedAt", "uploadedBy", "category"]
           }
         },
         "researcherComments": {

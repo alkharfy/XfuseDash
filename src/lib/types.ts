@@ -76,11 +76,14 @@ export interface Appointment {
   status: 'scheduled' | 'completed' | 'cancelled';
 }
 
+export type MarketResearchFileCategory = 'creative' | 'copywriter' | 'media_buyer' | 'manager' | 'client';
+
 export interface MarketResearchFile {
   fileName: string;
   fileUrl: string;
   uploadedAt: any; // Firestore Timestamp
   uploadedBy: string; // userId
+  category: MarketResearchFileCategory; // New field
 }
 
 export interface CalendarEntry {
