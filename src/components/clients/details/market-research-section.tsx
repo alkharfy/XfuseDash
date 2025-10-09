@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Client } from "@/lib/types";
+import { ChangeEvent, useState, useTransition } from "react";
+import { Client, MarketResearchFileCategory } from "@/lib/types";
 import { getSummaryForResearchFile } from "@/app/actions";
 import { useAuthStore } from "@/hooks/use-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,10 @@ import { File, Loader2, Sparkles, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { MarketResearchFileCategory } from "@/lib/types";
+import { useUploadFile } from "@/hooks/use-storage";
+import { updateDocumentNonBlocking, useFirestore, useFirebaseApp } from "@/firebase";
+import { arrayUnion, doc } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 
 const categoryTranslations: Record<MarketResearchFileCategory, string> = {
     creative: "كريتيف",
@@ -20,26 +23,99 @@ const categoryTranslations: Record<MarketResearchFileCategory, string> = {
     client: "عميل",
 };
 
-const FileUploadArea = ({ category, label }: { category: MarketResearchFileCategory, label: string }) => (
-    <div className="p-4 border-2 border-dashed rounded-lg text-center space-y-2">
-        <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-        <h4 className="font-semibold">ملف موجه لـ {label}</h4>
-        <Input type="file" className="hidden" id={`file-upload-${category}`}/>
-        <Button asChild variant="outline" size="sm">
-            <label htmlFor={`file-upload-${category}`}>تصفح الملفات</label>
-        </Button>
-    </div>
-);
+const FileUploadArea = ({ 
+    category, 
+    label, 
+    onFileSelect, 
+    isUploading,
+    progress
+}: { 
+    category: MarketResearchFileCategory, 
+    label: string, 
+    onFileSelect: (category: MarketResearchFileCategory, file: File) => void,
+    isUploading: boolean,
+    progress: number
+}) => {
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            onFileSelect(category, file);
+        }
+    };
+    
+    const inputId = `file-upload-${category}`;
+
+    return (
+        <div className="p-4 border-2 border-dashed rounded-lg text-center space-y-2 relative">
+            {isUploading ? (
+                <>
+                    <Loader2 className="mx-auto h-8 w-8 text-muted-foreground animate-spin" />
+                    <h4 className="font-semibold">جاري رفع ملف لـ {label}...</h4>
+                    <Progress value={progress} className="w-full" />
+                    <p className="text-sm text-muted-foreground">{Math.round(progress)}%</p>
+                </>
+            ) : (
+                 <>
+                    <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                    <h4 className="font-semibold">ملف موجه لـ {label}</h4>
+                    <Input type="file" className="hidden" id={inputId} onChange={handleFileChange} />
+                    <Button asChild variant="outline" size="sm">
+                        <label htmlFor={inputId}>تصفح الملفات</label>
+                    </Button>
+                 </>
+            )}
+        </div>
+    );
+};
 
 
 export function MarketResearchSection({ client }: { client: Client }) {
-    const { role } = useAuthStore();
+    const { user, role } = useAuthStore();
     const [summary, setSummary] = useState(client.marketResearchSummary || "");
-    const [isPending, startTransition] = useTransition();
+    const [isSummarizing, startSummarizeTransition] = useTransition();
     const { toast } = useToast();
+    const firebaseApp = useFirebaseApp();
+    const firestore = useFirestore();
+    const storage = getStorage(firebaseApp);
+    const { uploadFile, isUploading, progress, error } = useUploadFile();
+    const [uploadingCategory, setUploadingCategory] = useState<MarketResearchFileCategory | null>(null);
+
+
+    const handleFileSelect = async (category: MarketResearchFileCategory, file: File) => {
+        if (!user) {
+            toast({ variant: "destructive", title: "خطأ", description: "يجب أن تكون مسجلاً للدخول لرفع الملفات." });
+            return;
+        }
+
+        setUploadingCategory(category);
+        const filePath = `${client.id}/${file.name}`;
+        
+        try {
+            const downloadURL = await uploadFile(filePath, file);
+            
+            const clientRef = doc(firestore, "clients", client.id);
+            const newFile: any = {
+                fileName: file.name,
+                fileUrl: downloadURL,
+                uploadedAt: new Date(),
+                uploadedBy: user.uid,
+                category: category,
+            };
+
+            await updateDocumentNonBlocking(clientRef, {
+                marketResearchFiles: arrayUnion(newFile)
+            });
+
+            toast({ title: "نجاح", description: `تم رفع الملف "${file.name}" بنجاح.` });
+        } catch (uploadError) {
+             toast({ variant: "destructive", title: "خطأ في الرفع", description: (uploadError as Error).message });
+        } finally {
+            setUploadingCategory(null);
+        }
+    };
     
     const handleSummarize = (fileName: string) => {
-        startTransition(async () => {
+        startSummarizeTransition(async () => {
             const result = await getSummaryForResearchFile(fileName, client.id);
             if (result.summary) {
                 setSummary(result.summary);
@@ -50,6 +126,8 @@ export function MarketResearchSection({ client }: { client: Client }) {
         });
     }
 
+    const fileCategories: MarketResearchFileCategory[] = ["creative", "copywriter", "media_buyer", "manager", "client"];
+
     return (
         <Card>
             <CardHeader>
@@ -59,11 +137,16 @@ export function MarketResearchSection({ client }: { client: Client }) {
             <CardContent className="space-y-6">
                 {(role === 'market_researcher' || role === 'moderator') && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <FileUploadArea category="creative" label="الكريتفز" />
-                        <FileUploadArea category="copywriter" label="الكوبي رايتر" />
-                        <FileUploadArea category="media_buyer" label="الميديا باير" />
-                        <FileUploadArea category="manager" label="المدير" />
-                        <FileUploadArea category="client" label="العميل" />
+                        {fileCategories.map(category => (
+                            <FileUploadArea 
+                                key={category}
+                                category={category} 
+                                label={categoryTranslations[category]}
+                                onFileSelect={handleFileSelect}
+                                isUploading={uploadingCategory === category}
+                                progress={uploadingCategory === category ? progress : 0}
+                            />
+                        ))}
                     </div>
                 )}
 
@@ -77,9 +160,9 @@ export function MarketResearchSection({ client }: { client: Client }) {
                                     <span>{file.fileName}</span>
                                     {file.category && <span className="text-xs text-muted-foreground">({categoryTranslations[file.category] || file.category})</span>}
                                 </div>
-                                {(role === 'market_researcher' || role === 'moderator') && (
-                                    <Button size="sm" onClick={() => handleSummarize(file.fileName)} disabled={isPending}>
-                                        {isPending ? <Loader2 className="ms-2 h-4 w-4 animate-spin"/> : <Sparkles className="ms-2 h-4 w-4"/>}
+                                {(role === 'market_researcher' || role === 'moderator' || role === 'creative') && (
+                                    <Button size="sm" onClick={() => handleSummarize(file.fileName)} disabled={isSummarizing}>
+                                        {isSummarizing ? <Loader2 className="ms-2 h-4 w-4 animate-spin"/> : <Sparkles className="ms-2 h-4 w-4"/>}
                                         تلخيص
                                     </Button>
                                 )}
@@ -95,7 +178,7 @@ export function MarketResearchSection({ client }: { client: Client }) {
                     </div>
                 )}
 
-                 {isPending && (
+                 {isSummarizing && (
                     <div className="space-y-2">
                         <p className="text-sm text-muted-foreground">جاري تحليل الملف وتوليد الملخص...</p>
                         <Progress value={50} className="w-full" />
