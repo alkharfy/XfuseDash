@@ -87,10 +87,10 @@ export const columns: ColumnDef<Client>[] = [
         header: "اسم البيزنس",
     },
     {
-        accessorKey: "status",
+        accessorKey: "prStatus",
         header: "الحالة",
         cell: ({ row }) => {
-            const status = row.original.status || 'pending';
+            const status = row.original.prStatus || 'pending';
             return <Badge variant={statusVariantMap[status] || 'secondary'}>{statusTranslation[status]}</Badge>
         }
     },
