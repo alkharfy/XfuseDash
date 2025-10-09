@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
@@ -26,7 +26,7 @@ const clientSchema = z.object({
   phone: z.string().min(10, "يجب أن يكون رقم الهاتف 10 أرقام على الأقل."),
   businessName: z.string().min(2, "اسم البيزنس حقل إجباري."),
   businessField: z.string().min(2, "مجال البيزنس حقل إجباري."),
-  moderatorId: z.string({ required_error: "الرجاء اختيار مودريتور." }),
+  moderatorId: z.string().optional(),
   assignedToPR: z.string({ required_error: "الرجاء اختيار مسؤول علاقات عامة." }),
   socialMediaLinks: z.string().optional(),
   transferDate: z.date().optional(),
@@ -79,8 +79,16 @@ export function AddClientDialog({ children }: { children?: React.ReactNode }) {
     if (!firestore || !user) return;
     
     const clientsCollection = collection(firestore, 'clients');
+    const moderatorId = role === 'moderator' ? user.uid : values.moderatorId;
+
+    if (!moderatorId) {
+      form.setError("moderatorId", { message: "الرجاء اختيار مودريتور." });
+      return;
+    }
+
     const newClient = {
       ...values,
+      moderatorId: moderatorId,
       registeredBy: user.uid,
       registeredAt: serverTimestamp(),
       transferDate: values.transferDate ? serverTimestamp() : null,
@@ -97,6 +105,12 @@ export function AddClientDialog({ children }: { children?: React.ReactNode }) {
           notes: values.notes || "",
       }
     };
+    
+    // Remove properties from newClient that are already part of basicInfo to avoid duplication
+    delete (newClient as any).email;
+    delete (newClient as any).address;
+    delete (newClient as any).notes;
+
 
     addDocumentNonBlocking(clientsCollection, newClient);
 
@@ -175,7 +189,7 @@ export function AddClientDialog({ children }: { children?: React.ReactNode }) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {role === 'moderator' && user ? (
+                        {role === 'moderator' && user && user.displayName ? (
                            <SelectItem key={user.uid} value={user.uid}>{user.displayName}</SelectItem>
                         ) : (
                           moderators?.map(mod => (
@@ -271,6 +285,28 @@ export function AddClientDialog({ children }: { children?: React.ReactNode }) {
                   </FormItem>
                 )}
               />
+               <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>البريد الإلكتروني</FormLabel>
+                    <FormControl><Input {...field} type="email" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>العنوان</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
              <FormField
                 control={form.control}
@@ -289,6 +325,17 @@ export function AddClientDialog({ children }: { children?: React.ReactNode }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>الخدمات المعروضة</FormLabel>
+                    <FormControl><Textarea {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>ملاحظات</FormLabel>
                     <FormControl><Textarea {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
