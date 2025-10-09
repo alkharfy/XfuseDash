@@ -4,11 +4,12 @@ import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from 'next/link';
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useAuth as useFirebaseAuth } from "@/firebase";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -103,6 +104,17 @@ export function LoginForm() {
           </form>
         </Form>
       </CardContent>
+      <CardFooter className="flex justify-center">
+         <p className="px-8 text-center text-sm text-muted-foreground">
+            ليس لديك حساب؟{' '}
+            <Link
+              href="/register"
+              className="underline underline-offset-4 hover:text-primary"
+            >
+              إنشاء حساب
+            </Link>
+          </p>
+      </CardFooter>
     </Card>
   );
 }
