@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -103,6 +103,14 @@ export function AddClientDialog({ children }: { children?: React.ReactNode }) {
           email: values.email || "",
           address: values.address || "",
           notes: values.notes || "",
+      },
+      finalAgreement: {
+        approved: false,
+        agreementDetails: '',
+        duration: 0,
+        startDate: null,
+        approvedBy: '',
+        approvedAt: null,
       }
     };
     
@@ -128,6 +136,7 @@ export function AddClientDialog({ children }: { children?: React.ReactNode }) {
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>إضافة عميل جديد</DialogTitle>
+          <DialogDescription>أدخل البيانات الأساسية للعميل الجديد ليتم إضافته إلى النظام.</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[80vh] overflow-y-auto p-2">

@@ -47,6 +47,8 @@ export interface Client {
     marketResearch: boolean;
     content: boolean;
     creative: boolean;
+    aiVideo?: boolean;
+    ads?: boolean;
   };
 
   // Market Researcher Fields
@@ -101,6 +103,10 @@ export interface FinalAgreement {
   startDate: any; // Firestore Timestamp
   approvedBy: string; // userId
   approvedAt: any; // Firestore Timestamp
+  agreedPrice?: number;
+  firstPayment?: number;
+  paymentScreenshotUrl?: string;
+  requiredExecution?: string;
 }
 
 export interface Notification {

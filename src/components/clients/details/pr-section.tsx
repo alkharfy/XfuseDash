@@ -5,11 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Calendar, Check, MoreVertical, X } from "lucide-react";
 import { formatTimestamp } from "@/lib/utils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useFirestore, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { ApproveClientDialog } from "./approve-client-dialog";
 
 export function PRSection({ client }: { client: Client }) {
     const firestore = useFirestore();
@@ -48,6 +49,7 @@ export function PRSection({ client }: { client: Client }) {
                         <DialogContent>
                             <DialogHeader>
                                 <DialogTitle>تغيير حالة العميل</DialogTitle>
+                                <DialogDescription>اختر الحالة الجديدة للعميل في قسم العلاقات العامة.</DialogDescription>
                             </DialogHeader>
                             <div className="py-4">
                                 <Select defaultValue={client.prStatus} onValueChange={handleStatusChange}>
@@ -88,20 +90,12 @@ export function PRSection({ client }: { client: Client }) {
 
                 <div className="flex items-center justify-between">
                     <p><strong>حالة التحويل:</strong> {client.transferStatus || 'active'}</p>
-                    <Dialog>
-                        <DialogTrigger asChild>
-                            <Button variant="secondary">إجراء تحويل</Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                             <DialogHeader>
-                                <DialogTitle>تحويل العميل</DialogTitle>
-                            </DialogHeader>
-                            <div className="py-4 flex gap-4">
-                                <Button className="flex-1" variant="destructive" onClick={() => handleTransferStatusChange('bad_client')}><X className="ms-2 h-4 w-4"/>عميل سيء</Button>
-                                <Button className="flex-1" onClick={() => handleTransferStatusChange('approved')}><Check className="ms-2 h-4 w-4"/>موافقة وتحويل</Button>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
+                    <div className="flex gap-2">
+                        <Button variant="destructive" onClick={() => handleTransferStatusChange('bad_client')}><X className="ms-2 h-4 w-4"/>عميل سيء</Button>
+                        <ApproveClientDialog client={client}>
+                            <Button><Check className="ms-2 h-4 w-4"/>موافقة وتحويل</Button>
+                        </ApproveClientDialog>
+                    </div>
                 </div>
 
             </CardContent>

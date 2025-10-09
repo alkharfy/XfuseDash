@@ -153,8 +153,25 @@
           "description": "Transfer status of the client (active, bad_client, approved, converted)."
         },
         "serviceRequests": {
-          "type": "string",
-          "description": "Whether the client needs market research, content, or creative services."
+          "type": "object",
+          "description": "Specifies which services the client has requested.",
+          "properties": {
+            "marketResearch": {
+              "type": "boolean"
+            },
+            "content": {
+              "type": "boolean"
+            },
+            "creative": {
+              "type": "boolean"
+            },
+            "aiVideo": {
+              "type": "boolean"
+            },
+            "ads": {
+              "type": "boolean"
+            }
+          }
         },
         "marketResearchFiles": {
           "type": "array",
@@ -198,8 +215,42 @@
           }
         },
         "finalAgreement": {
-          "type": "string",
-          "description": "Final agreement details, duration, start date, approval status, and approver."
+          "type": "object",
+          "description": "Final agreement details.",
+          "properties": {
+            "approved": {
+              "type": "boolean"
+            },
+            "agreementDetails": {
+              "type": "string"
+            },
+            "duration": {
+              "type": "number"
+            },
+            "startDate": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "approvedBy": {
+              "type": "string"
+            },
+            "approvedAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "agreedPrice": {
+              "type": "number"
+            },
+            "firstPayment": {
+              "type": "number"
+            },
+            "paymentScreenshotUrl": {
+              "type": "string"
+            },
+            "requiredExecution": {
+              "type": "string"
+            }
+          }
         }
       },
       "required": [
