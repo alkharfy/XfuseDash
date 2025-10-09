@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from "react";
@@ -18,12 +19,20 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
+import { AddClientDialog } from "./add-client-dialog";
 
 const filterClients = (clients: Client[], role: UserRole, userId: string, tab: string, searchTerm: string): Client[] => {
     let filtered = clients;
     
     // Role & Tab based filtering
     switch (role) {
+        case 'admin':
+             if (tab === 'active') {
+                filtered = clients.filter(c => c.transferStatus === 'active');
+            } else if (tab === 'approved') {
+                filtered = clients.filter(c => c.transferStatus === 'approved');
+            }
+            break;
         case 'moderator':
             if (tab === 'my-clients') {
                 filtered = clients.filter(c => c.registeredBy === userId);
@@ -135,11 +144,13 @@ export default function ClientList({ isPaginated = true }: { isPaginated?: boole
                     />
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto">
-                    {role === 'moderator' && (
-                        <Button className="flex-1 sm:flex-none">
-                            <PlusCircle className="ms-2 h-4 w-4" />
-                            إضافة عميل
-                        </Button>
+                    {(role === 'moderator' || role === 'admin') && (
+                       <AddClientDialog>
+                           <Button className="flex-1 sm:flex-none">
+                                <PlusCircle className="ms-2 h-4 w-4" />
+                                إضافة عميل
+                            </Button>
+                       </AddClientDialog>
                     )}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -157,7 +168,7 @@ export default function ClientList({ isPaginated = true }: { isPaginated?: boole
             </CardHeader>
             <CardContent>
                 <Tabs value={activeTab} onValueChange={handleTabChange}>
-                    <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-flex">
+                    <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 sm:w-auto sm:inline-flex">
                         {tabs.map(tab => (
                             <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
                         ))}

@@ -1,6 +1,7 @@
 export type UserRole = 'admin' | 'moderator' | 'pr' | 'market_researcher' | 'creative' | 'content';
 
 export interface User {
+  id: string; // Ensure id is part of the type for consistency
   uid: string;
   email: string;
   role: UserRole;
