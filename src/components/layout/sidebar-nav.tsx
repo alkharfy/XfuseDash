@@ -3,20 +3,10 @@
 
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
 import { useAuthStore } from "@/hooks/use-auth";
 import { getLinksForRole, getTabsForRole } from "@/lib/roles";
 import { Zap } from "lucide-react";
-
+import { cn } from "@/lib/utils";
 
 export default function SidebarNav() {
   const pathname = usePathname();
@@ -25,9 +15,9 @@ export default function SidebarNav() {
   
   if (!role) {
     return (
-      <Sidebar className="border-e hidden md:block" collapsible="icon">
+      <aside className="hidden md:block w-64 flex-shrink-0 border-r bg-card">
         {/* Placeholder or loading state for sidebar */}
-      </Sidebar>
+      </aside>
     );
   }
 
@@ -50,35 +40,28 @@ export default function SidebarNav() {
   };
 
   return (
-    <Sidebar className="border-e" collapsible="icon">
-      <SidebarHeader className="flex items-center justify-between p-4">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-          <Zap className="h-6 w-6 text-primary" />
-          <span className="font-headline text-lg group-data-[collapsible=icon]:hidden">MarketFlow</span>
-        </Link>
-        <SidebarTrigger className="hidden md:flex" />
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarMenu>
+    <aside className="hidden md:flex md:flex-col md:w-64 md:flex-shrink-0 border-r bg-card">
+        <div className="h-16 flex items-center px-6 border-b">
+             <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+                <Zap className="h-6 w-6 text-primary" />
+                <span className="font-headline text-lg">MarketFlow</span>
+            </Link>
+        </div>
+        <nav className="flex-1 p-4 space-y-2">
           {links.map((link) => (
-            <SidebarMenuItem key={link.href}>
-              <SidebarMenuButton
-                asChild
-                isActive={isLinkActive(link.href)}
-                tooltip={{ children: link.label }}
-              >
-                <Link href={link.href}>
-                  <link.icon className="h-5 w-5" />
-                  <span>{link.label}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+             <Link
+              key={link.href}
+              href={link.href}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-muted",
+                isLinkActive(link.href) && "bg-muted text-primary"
+              )}
+            >
+              <link.icon className="h-4 w-4" />
+              {link.label}
+            </Link>
           ))}
-        </SidebarMenu>
-      </SidebarContent>
-      <SidebarFooter>
-        {/* Footer content can go here */}
-      </SidebarFooter>
-    </Sidebar>
+        </nav>
+    </aside>
   );
 }
