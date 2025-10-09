@@ -4,11 +4,11 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import Header from '@/components/layout/header';
+import SidebarNav from '@/components/layout/sidebar-nav';
 import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/use-auth';
 import { doc } from 'firebase/firestore';
 import type { User as AppUser } from '@/lib/types';
-import BottomNav from '@/components/layout/bottom-nav';
 
 
 export default function AppLayout({
@@ -48,12 +48,14 @@ export default function AppLayout({
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      <Header />
-      <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 bg-background pb-20">
-        {children}
-      </main>
-      <BottomNav />
+    <div className="flex h-screen bg-background">
+      <SidebarNav />
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <Header />
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
