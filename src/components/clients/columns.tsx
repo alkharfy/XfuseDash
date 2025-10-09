@@ -95,6 +95,14 @@ export const columns: ColumnDef<Client>[] = [
         }
     },
     {
+        accessorKey: "transferStatus",
+        header: "نوع العميل",
+        cell: ({ row }) => {
+            const status = row.original.transferStatus || 'active';
+            return <Badge variant={statusVariantMap[status] || 'secondary'}>{statusTranslation[status]}</Badge>
+        }
+    },
+    {
         accessorKey: "transferDate",
         header: "تاريخ التحويل",
         cell: ({ row }) => formatShortDate(row.original.transferDate)
