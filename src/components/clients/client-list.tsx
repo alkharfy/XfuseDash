@@ -64,7 +64,7 @@ const filterClients = (clients: Client[], role: UserRole, userId: string, tab: s
             // "my-clients" is the default, no extra filtering needed after assignedToPR
             break;
         case 'market_researcher':
-            filtered = clients.filter(c => c.serviceRequests.marketResearch);
+            filtered = clients.filter(c => c.serviceRequests.marketResearch && c.transferStatus === 'approved');
             break;
         case 'creative':
             filtered = clients.filter(c => c.serviceRequests.creative && c.transferStatus === 'approved');
