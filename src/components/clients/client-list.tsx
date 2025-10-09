@@ -2,8 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { mockClients } from "@/lib/data";
+import { useAuthStore } from "@/hooks/use-auth";
 import { Client, UserRole } from "@/lib/types";
 import { DataTable } from "./data-table";
 import { columns } from "./columns";
@@ -16,6 +15,9 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getTabsForRole } from "@/lib/roles";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
+import { Loader2 } from "lucide-react";
 
 const filterClients = (clients: Client[], role: UserRole, userId: string, tab: string, searchTerm: string): Client[] => {
     let filtered = clients;
@@ -66,7 +68,7 @@ const filterClients = (clients: Client[], role: UserRole, userId: string, tab: s
         filtered = filtered.filter(client =>
             client.name.toLowerCase().includes(lowercasedTerm) ||
             client.phone.includes(lowercasedTerm) ||
-            client.basicInfo.email.toLowerCase().includes(lowercasedTerm)
+            (client.basicInfo && client.basicInfo.email.toLowerCase().includes(lowercasedTerm))
         );
     }
     
@@ -74,16 +76,24 @@ const filterClients = (clients: Client[], role: UserRole, userId: string, tab: s
 };
 
 
-export default function ClientList({ clients: initialClients, isPaginated = true }: { clients?: Client[], isPaginated?: boolean }) {
-    const { user, role } = useAuth();
+export default function ClientList({ isPaginated = true }: { isPaginated?: boolean }) {
+    const { user, role } = useAuthStore();
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const firestore = useFirestore();
 
     const [searchTerm, setSearchTerm] = useState("");
     const tabs = role ? getTabsForRole(role) : [];
     
     const activeTab = searchParams.get('tab') || (tabs.length > 0 ? tabs[0].value : '');
+
+    const clientsQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'clients');
+    }, [firestore]);
+    
+    const { data: initialClients, isLoading } = useCollection<Client>(clientsQuery);
 
     if (!user || !role) return null;
 
@@ -93,15 +103,16 @@ export default function ClientList({ clients: initialClients, isPaginated = true
         router.push(`${pathname}?${params.toString()}`);
     };
 
-    const clients = filterClients(initialClients || mockClients, role, user.uid, activeTab, searchTerm);
+    const clients = filterClients(initialClients || [], role, user.uid, activeTab, searchTerm);
     
     const handleExport = (format: 'excel' | 'pdf') => {
+        if (!clients.length) return;
         const dataToExport = clients.map(c => ({
             الاسم: c.name,
             الهاتف: c.phone,
-            الايميل: c.basicInfo.email,
+            الايميل: c.basicInfo?.email || 'N/A',
             الحالة: c.prStatus || 'N/A',
-            تاريخ_التسجيل: new Date((c.registeredAt.seconds || 0) * 1000).toLocaleDateString('ar-EG'),
+            تاريخ_التسجيل: c.registeredAt ? new Date((c.registeredAt.seconds || 0) * 1000).toLocaleDateString('ar-EG') : 'N/A',
         }));
 
         if (format === 'excel') {
@@ -152,7 +163,13 @@ export default function ClientList({ clients: initialClients, isPaginated = true
                         ))}
                     </TabsList>
                     <div className="mt-4">
-                        <DataTable columns={columns} data={clients} isPaginated={isPaginated} />
+                        {isLoading ? (
+                            <div className="flex justify-center items-center h-64">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            </div>
+                        ) : (
+                           <DataTable columns={columns} data={clients} isPaginated={isPaginated} />
+                        )}
                     </div>
                 </Tabs>
             </CardContent>

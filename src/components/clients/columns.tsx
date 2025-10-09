@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuthStore } from "@/hooks/use-auth";
 
 const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
     pending: "outline",
@@ -23,7 +24,8 @@ const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive"
     completed: "default",
     active: "secondary",
     approved: "default",
-    bad_client: "destructive"
+    bad_client: "destructive",
+    converted: "default"
 };
 
 const statusTranslation: { [key: string]: string } = {
@@ -38,8 +40,7 @@ const statusTranslation: { [key: string]: string } = {
 };
 
 const ClientActions = ({ client }: { client: Client }) => {
-    // In a real app, role would come from auth context
-    const role = "moderator";
+    const { role } = useAuthStore();
 
     return (
         <DropdownMenu>
@@ -84,6 +85,7 @@ export const columns: ColumnDef<Client>[] = [
     {
         accessorKey: "basicInfo.email",
         header: "البريد الإلكتروني",
+         cell: ({ row }) => row.original.basicInfo?.email || "N/A"
     },
     {
         accessorKey: "prStatus",

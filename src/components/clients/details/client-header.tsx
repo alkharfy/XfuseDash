@@ -14,7 +14,8 @@ const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive"
     completed: "default",
     active: "secondary",
     approved: "default",
-    bad_client: "destructive"
+    bad_client: "destructive",
+    converted: "default",
 };
 
 const statusTranslation: { [key: string]: string } = {

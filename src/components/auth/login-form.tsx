@@ -5,9 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
-
-import { useAuth } from "@/hooks/use-auth";
-import { loginAction } from "@/app/actions";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { useAuth as useFirebaseAuth } from "@/firebase";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,7 +23,7 @@ const loginSchema = z.object({
 export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const auth = useAuth();
+  const auth = useFirebaseAuth();
   const router = useRouter();
 
   const form = useForm<z.infer<typeof loginSchema>>({
@@ -38,12 +37,15 @@ export function LoginForm() {
   const onSubmit = (values: z.infer<typeof loginSchema>) => {
     setError(null);
     startTransition(async () => {
-      const result = await loginAction(values);
-      if (result.error) {
-        setError(result.error);
-      } else if (result.success && result.user) {
-        await auth.login(result.user.email);
+      try {
+        await signInWithEmailAndPassword(auth, values.email, values.password);
         router.push("/dashboard");
+      } catch (e: any) {
+        if (e.code === 'auth/invalid-credential' || e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password') {
+            setError('فشل تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور.');
+        } else {
+            setError('حدث خطأ غير متوقع. الرجاء المحاولة مرة أخرى.');
+        }
       }
     });
   };

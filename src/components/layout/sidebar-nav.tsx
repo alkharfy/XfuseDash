@@ -13,7 +13,7 @@ import {
   SidebarFooter,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuthStore } from "@/hooks/use-auth";
 import { getLinksForRole, getTabsForRole } from "@/lib/roles";
 import { Zap } from "lucide-react";
 
@@ -21,7 +21,7 @@ import { Zap } from "lucide-react";
 export default function SidebarNav() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { role } = useAuth();
+  const { role } = useAuthStore();
   
   if (!role) {
     return (
@@ -45,9 +45,7 @@ export default function SidebarNav() {
       return linkTab === (currentTab || defaultTab);
     }
     
-    // For links without a tab (like /dashboard), it's active if the path matches and no tab is in the URL.
-    // This part is tricky because other pages might have their own tabs.
-    // A simpler check is just path equality for non-tabbed links.
+    // For links without a tab (like /dashboard), it's active if the path matches.
     return pathname === href;
   };
 

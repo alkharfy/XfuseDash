@@ -7,8 +7,31 @@ import { Calendar, Check, MoreVertical, X } from "lucide-react";
 import { formatTimestamp } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useFirestore, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 export function PRSection({ client }: { client: Client }) {
+    const firestore = useFirestore();
+
+    const clientRef = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return doc(firestore, 'clients', client.id);
+    }, [firestore, client.id]);
+
+    const handleStatusChange = (status: string) => {
+        if (clientRef) {
+            updateDocumentNonBlocking(clientRef, { prStatus: status });
+        }
+    };
+    
+    const handleTransferStatusChange = (status: string) => {
+        if(clientRef) {
+            updateDocumentNonBlocking(clientRef, { transferStatus: status });
+        }
+    }
+
+
     return (
         <Card>
             <CardHeader>
@@ -27,7 +50,7 @@ export function PRSection({ client }: { client: Client }) {
                                 <DialogTitle>تغيير حالة العميل</DialogTitle>
                             </DialogHeader>
                             <div className="py-4">
-                                <Select defaultValue={client.prStatus}>
+                                <Select defaultValue={client.prStatus} onValueChange={handleStatusChange}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="اختر الحالة" />
                                     </SelectTrigger>
@@ -74,8 +97,8 @@ export function PRSection({ client }: { client: Client }) {
                                 <DialogTitle>تحويل العميل</DialogTitle>
                             </DialogHeader>
                             <div className="py-4 flex gap-4">
-                                <Button className="flex-1" variant="destructive"><X className="ms-2 h-4 w-4"/>عميل سيء</Button>
-                                <Button className="flex-1"><Check className="ms-2 h-4 w-4"/>موافقة وتحويل</Button>
+                                <Button className="flex-1" variant="destructive" onClick={() => handleTransferStatusChange('bad_client')}><X className="ms-2 h-4 w-4"/>عميل سيء</Button>
+                                <Button className="flex-1" onClick={() => handleTransferStatusChange('approved')}><Check className="ms-2 h-4 w-4"/>موافقة وتحويل</Button>
                             </div>
                         </DialogContent>
                     </Dialog>
