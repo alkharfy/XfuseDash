@@ -17,10 +17,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['var(--font-inter)'],
-        body: ['var(--font-inter)'],
-        headline: ['var(--font-space-grotesk)'],
-        code: ['monospace'],
+        sans: ['var(--font-sans)'],
+        headline: ['var(--font-sans)'],
       },
       colors: {
         border: 'hsl(var(--border))',
