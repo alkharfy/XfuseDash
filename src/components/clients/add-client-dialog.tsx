@@ -27,6 +27,7 @@ const clientSchema = z.object({
   businessName: z.string().min(2, "اسم البيزنس حقل إجباري."),
   businessField: z.string().min(2, "مجال البيزنس حقل إجباري."),
   moderatorId: z.string({ required_error: "الرجاء اختيار مودريتور." }),
+  assignedToPR: z.string({ required_error: "الرجاء اختيار مسؤول علاقات عامة." }),
   socialMediaLinks: z.string().optional(),
   transferDate: z.date().optional(),
   status: z.enum(['pending', 'in_progress', 'under_review', 'completed']).default('pending'),
@@ -48,6 +49,14 @@ export function AddClientDialog({ children }: { children?: React.ReactNode }) {
   }, [firestore]);
 
   const { data: moderators } = useCollection<User>(moderatorsQuery);
+  
+  const prUsersQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "users"), where("role", "==", "pr"));
+  }, [firestore]);
+
+  const { data: prUsers } = useCollection<User>(prUsersQuery);
+
 
   const form = useForm<z.infer<typeof clientSchema>>({
     resolver: zodResolver(clientSchema),
@@ -75,7 +84,6 @@ export function AddClientDialog({ children }: { children?: React.ReactNode }) {
       registeredBy: user.uid,
       registeredAt: serverTimestamp(),
       transferDate: values.transferDate ? serverTimestamp() : null,
-      assignedToPR: "", // Explicitly set to empty string
       prStatus: values.status,
       transferStatus: 'active',
       serviceRequests: {
@@ -182,6 +190,28 @@ export function AddClientDialog({ children }: { children?: React.ReactNode }) {
               />
               <FormField
                 control={form.control}
+                name="assignedToPR"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>المسؤول (PR)</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر مسؤول العلاقات العامة" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {prUsers?.map(pr => (
+                          <SelectItem key={pr.id} value={pr.id}>{pr.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="transferDate"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
@@ -237,17 +267,6 @@ export function AddClientDialog({ children }: { children?: React.ReactNode }) {
                         <SelectItem value="completed">مكتمل</SelectItem>
                       </SelectContent>
                     </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>البريد الإلكتروني (اختياري)</FormLabel>
-                    <FormControl><Input type="email" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
