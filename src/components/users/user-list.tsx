@@ -7,7 +7,9 @@ import { DataTable } from "./data-table"
 import { columns } from "./columns"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { PlusCircle, Search } from "lucide-react"
+import { AddUserDialog } from "./add-user-dialog"
 
 export function UserList({ users }: { users: User[] }) {
   const [searchTerm, setSearchTerm] = React.useState("")
@@ -19,7 +21,7 @@ export function UserList({ users }: { users: User[] }) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-4">
         <div className="relative w-full max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -29,6 +31,12 @@ export function UserList({ users }: { users: User[] }) {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+         <AddUserDialog>
+            <Button>
+                <PlusCircle className="ms-2 h-4 w-4" />
+                إضافة مستخدم
+            </Button>
+        </AddUserDialog>
       </CardHeader>
       <CardContent>
         <DataTable columns={columns} data={filteredUsers} />

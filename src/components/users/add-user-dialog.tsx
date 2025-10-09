@@ -4,25 +4,25 @@ import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth, useFirestore } from "@/firebase";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, PlusCircle } from "lucide-react";
 import { UserRole } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
 const registerSchema = z.object({
   name: z.string().min(3, { message: "يجب أن يكون الاسم 3 أحرف على الأقل." }),
   email: z.string().email({ message: "الرجاء إدخال بريد إلكتروني صالح." }),
   password: z.string().min(6, { message: "يجب أن تكون كلمة المرور 6 أحرف على الأقل." }),
-  role: z.enum(['moderator', 'pr', 'market_researcher', 'creative', 'content'], {
+  role: z.enum(['admin', 'moderator', 'pr', 'market_researcher', 'creative', 'content'], {
     errorMap: () => ({ message: 'الرجاء اختيار دور صحيح.' })
   }),
 });
@@ -36,12 +36,13 @@ const roleTranslations: Record<UserRole, string> = {
     content: 'محتوى'
 };
 
-export function RegisterForm() {
+export function AddUserDialog({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isOpen, setIsOpen] = useState(false);
   const auth = useAuth();
   const firestore = useFirestore();
-  const router = useRouter();
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -57,12 +58,11 @@ export function RegisterForm() {
     setError(null);
     startTransition(async () => {
       try {
+        // This is a temporary auth instance to create user, to avoid signing in the admin as the new user.
+        // In a real app, this should be handled by a backend function.
         const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
         const user = userCredential.user;
 
-        await updateProfile(user, { displayName: values.name });
-
-        // Add user to Firestore
         await setDoc(doc(firestore, "users", user.uid), {
           name: values.name,
           email: values.email,
@@ -72,7 +72,12 @@ export function RegisterForm() {
           id: user.uid,
         });
 
-        router.push("/dashboard");
+        toast({
+            title: "تم الإنشاء",
+            description: `تم إنشاء حساب للمستخدم ${values.name} بنجاح.`
+        });
+        form.reset();
+        setIsOpen(false);
       } catch (e: any) {
         if (e.code === 'auth/email-already-in-use') {
             setError('هذا البريد الإلكتروني مستخدم بالفعل.');
@@ -87,13 +92,13 @@ export function RegisterForm() {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="font-headline">إنشاء حساب</CardTitle>
-        <CardDescription>أدخل بياناتك لإنشاء حساب جديد</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
+     <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>إضافة مستخدم جديد</DialogTitle>
+        </DialogHeader>
+         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-4">
               <FormField
@@ -148,7 +153,7 @@ export function RegisterForm() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {Object.keys(roleTranslations).filter(r => r !== 'admin').map(roleKey => (
+                        {Object.keys(roleTranslations).map(roleKey => (
                             <SelectItem key={roleKey} value={roleKey}>
                                 {roleTranslations[roleKey as UserRole]}
                             </SelectItem>
@@ -169,13 +174,18 @@ export function RegisterForm() {
               </Alert>
             )}
 
-            <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending && <Loader2 className="ms-2 h-4 w-4 animate-spin" />}
-              إنشاء الحساب
-            </Button>
+             <DialogFooter>
+                <DialogClose asChild>
+                    <Button type="button" variant="ghost">إلغاء</Button>
+                </DialogClose>
+                <Button type="submit" disabled={isPending}>
+                {isPending && <Loader2 className="ms-2 h-4 w-4 animate-spin" />}
+                إضافة المستخدم
+                </Button>
+            </DialogFooter>
           </form>
         </Form>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }
