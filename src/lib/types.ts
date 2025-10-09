@@ -1,4 +1,4 @@
-export type UserRole = 'moderator' | 'pr' | 'market_researcher' | 'creative' | 'content';
+export type UserRole = 'admin' | 'moderator' | 'pr' | 'market_researcher' | 'creative' | 'content';
 
 export interface User {
   uid: string;

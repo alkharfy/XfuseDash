@@ -12,10 +12,17 @@ import {
   FileClock,
   Bell,
   BarChart,
+  Shield,
 } from "lucide-react";
 
 export const getTabsForRole = (role: UserRole) => {
     switch (role) {
+        case 'admin':
+             return [
+                { value: "all", label: "كل العملاء" },
+                { value: "active", label: "النشطون" },
+                { value: "approved", label: "المعتمدون" },
+             ];
         case 'moderator':
             return [
                 { value: "my-clients", label: "عملائي" },
@@ -33,6 +40,14 @@ export const getTabsForRole = (role: UserRole) => {
              return [{ value: "my-tasks", label: "مهامي" }];
     }
 };
+
+const adminLinks = [
+    { href: "/dashboard", label: "لوحة التحكم", icon: LayoutDashboard },
+    { href: "/clients?tab=all", label: "إدارة العملاء", icon: Users },
+    { href: "/users", label: "إدارة المستخدمين", icon: Shield },
+    { href: "/notifications", label: "الإشعارات", icon: Bell },
+    { href: "/reports", label: "التقارير", icon: BarChart },
+];
 
 const moderatorLinks = [
   { href: "/dashboard", label: "لوحة التحكم", icon: LayoutDashboard },
@@ -68,6 +83,7 @@ const contentLinks = [
 export const getLinksForRole = (role: UserRole | null) => {
     if (!role) return [];
     switch (role) {
+        case 'admin': return adminLinks;
         case 'moderator': return moderatorLinks;
         case 'pr': return prLinks;
         case 'market_researcher': return researcherLinks;

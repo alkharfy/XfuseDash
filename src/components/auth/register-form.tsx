@@ -22,13 +22,14 @@ const registerSchema = z.object({
   name: z.string().min(3, { message: "يجب أن يكون الاسم 3 أحرف على الأقل." }),
   email: z.string().email({ message: "الرجاء إدخال بريد إلكتروني صالح." }),
   password: z.string().min(6, { message: "يجب أن تكون كلمة المرور 6 أحرف على الأقل." }),
-  role: z.enum(['moderator', 'pr', 'market_researcher', 'creative', 'content'], {
+  role: z.enum(['admin', 'moderator', 'pr', 'market_researcher', 'creative', 'content'], {
     errorMap: () => ({ message: 'الرجاء اختيار دور صحيح.' })
   }),
 });
 
 const roleTranslations: Record<UserRole, string> = {
-    moderator: 'مدير',
+    admin: 'مدير',
+    moderator: 'مشرف',
     pr: 'علاقات عامة',
     market_researcher: 'باحث سوق',
     creative: 'مبدع',
