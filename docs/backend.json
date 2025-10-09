@@ -1,0 +1,316 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user in the marketing team dashboard.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "Role of the user (moderator, pr, market_researcher, creative, content)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the user."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Indicates whether the user account is active."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "role",
+        "name",
+        "createdAt",
+        "active"
+      ]
+    },
+    "Client": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Client",
+      "type": "object",
+      "description": "Represents a client managed by the marketing team.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the client entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the client."
+        },
+        "phone": {
+          "type": "string",
+          "description": "Phone number of the client."
+        },
+        "registeredBy": {
+          "type": "string",
+          "description": "Reference to User who registered the client. (Relationship: User 1:N Client)"
+        },
+        "registeredAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the client was registered.",
+          "format": "date-time"
+        },
+        "basicInfo": {
+          "type": "string",
+          "description": "basic info of the client, such as email, address, and notes."
+        },
+        "assignedToPR": {
+          "type": "string",
+          "description": "Reference to User assigned to PR for this client. (Relationship: User 1:N Client)"
+        },
+        "prStatus": {
+          "type": "string",
+          "description": "PR status of the client (pending, in_progress, under_review, completed)."
+        },
+        "prAppointments": {
+          "type": "array",
+          "description": "Appointment list for the PR status",
+          "items": {
+            "type": "string"
+          }
+        },
+        "transferStatus": {
+          "type": "string",
+          "description": "Transfer status of the client (active, bad_client, approved, converted)."
+        },
+        "serviceRequests": {
+          "type": "string",
+          "description": "Whether the client needs market research, content, or creative services."
+        },
+        "marketResearchFiles": {
+          "type": "array",
+          "description": "File list for market research.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "researcherComments": {
+          "type": "string",
+          "description": "Comments from the market researcher."
+        },
+        "researchStatus": {
+          "type": "string",
+          "description": "Market research status (pending, in_progress, completed)."
+        },
+        "creativeStatus": {
+          "type": "string",
+          "description": "Creative status (in_progress, completed, cancelled)."
+        },
+        "creativeNotes": {
+          "type": "string",
+          "description": "Notes from the creative team."
+        },
+        "contentCalendar": {
+          "type": "array",
+          "description": "Array of content calender.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contentStatus": {
+          "type": "string",
+          "description": "Content status (pending, in_progress, completed)."
+        },
+        "contentTasks": {
+          "type": "array",
+          "description": "Array of tasks for content creation",
+          "items": {
+            "type": "string"
+          }
+        },
+        "finalAgreement": {
+          "type": "string",
+          "description": "Final agreement details, duration, start date, approval status, and approver."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "phone",
+        "registeredBy",
+        "registeredAt"
+      ]
+    },
+    "Notification": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Notification",
+      "type": "object",
+      "description": "Represents a notification for a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the notification entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User who should receive the notification. (Relationship: User 1:N Notification)"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type of notification."
+        },
+        "message": {
+          "type": "string",
+          "description": "Message of the notification."
+        },
+        "relatedClientId": {
+          "type": "string",
+          "description": "Reference to Client related to the notification. (Relationship: Client 1:N Notification)"
+        },
+        "read": {
+          "type": "boolean",
+          "description": "Indicates whether the notification has been read."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the notification was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "type",
+        "message",
+        "relatedClientId",
+        "read",
+        "createdAt"
+      ]
+    },
+    "SystemLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SystemLog",
+      "type": "object",
+      "description": "Represents a system log entry.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the system log entry."
+        },
+        "action": {
+          "type": "string",
+          "description": "Action performed (e.g., 'client_created', 'status_updated')."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User who performed the action. (Relationship: User 1:N SystemLog)"
+        },
+        "clientId": {
+          "type": "string",
+          "description": "Reference to Client related to the action (if applicable). (Relationship: Client 1:N SystemLog)"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp indicating when the action was performed.",
+          "format": "date-time"
+        },
+        "details": {
+          "type": "string",
+          "description": "Additional details about the action."
+        }
+      },
+      "required": [
+        "id",
+        "action",
+        "userId",
+        "clientId",
+        "timestamp",
+        "details"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user data. Includes the 'role' field to manage user access levels, avoiding custom claims.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clients/{clientId}",
+        "definition": {
+          "entityName": "Client",
+          "schema": {
+            "$ref": "#/backend/entities/Client"
+          },
+          "description": "Stores client data. Includes denormalized 'registeredBy' and 'assignedToPR' fields for authorization independence, enabling secure client access based on the user's role and ownership.",
+          "params": [
+            {
+              "name": "clientId",
+              "description": "The unique identifier of the client."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/notifications/{notificationId}",
+        "definition": {
+          "entityName": "Notification",
+          "schema": {
+            "$ref": "#/backend/entities/Notification"
+          },
+          "description": "Stores notifications. Uses a path-based ownership model `/users/{userId}/notifications/{notificationId}` so that security rules can ensure only the user can read their notifications.",
+          "params": [
+            {
+              "name": "notificationId",
+              "description": "The unique identifier of the notification."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/systemLogs/{logId}",
+        "definition": {
+          "entityName": "SystemLog",
+          "schema": {
+            "$ref": "#/backend/entities/SystemLog"
+          },
+          "description": "Stores system logs for auditing and debugging purposes.",
+          "params": [
+            {
+              "name": "logId",
+              "description": "The unique identifier of the system log entry."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to provide a secure and scalable solution for the marketing team dashboard, adhering to the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). \n\n*   **Authorization Independence:** Achieved through denormalization. For example, the `clients` collection stores the `registeredBy` field, which is the `userId` of the moderator who created the client. This allows security rules to validate the user's role and the client's ownership without needing to perform a `get()` operation to retrieve the user's role from the `/users` collection. This also applies to `assignedToPR`, enabling direct access control based on this field.\n*   **QAPs (Rules are not Filters):** Supported by structural segregation and the use of hierarchical paths for user-owned data and collaborative access models. The segregation of clients and users into distinct collections, along with role-based access control enforced by security rules, ensures that list operations are secure and efficient. The `/users/{userId}/notifications` path allows listing of notifications specific to a user, and security rules can efficiently filter by `request.auth.uid`.\n*   **DBAC:** Roles are stored directly in the `users` collection. This avoids the complexity and potential security issues associated with custom claims. Security rules use the `request.auth.uid` to verify the user's identity and retrieve their role from the `users` collection, enabling role-based access control.\n*   **Structural Segregation:** Enforced by storing different entities in separate collections. For example, `/users` stores user information, `/clients` stores client data, `/notifications` stores notifications, and `/systemLogs` stores system logs. This segregation simplifies security rules and ensures that each collection has a homogeneous security posture.\n*   **Access Modeling:** Uses path-based ownership for user-specific data such as notifications (`/users/{userId}/notifications/{notificationId}`). This structure facilitates straightforward security rules based on `request.auth.uid`. The membership map pattern is not applicable in this design since there are no collaborative entities.\n*   **Data Clarity and Predictability:** Achieved through explicit state modeling (e.g., the `prStatus` field in the `clients` collection) and consistent naming conventions. All paths and fields are named semantically, making the structure easy to understand and maintain.\n"
+  }
+}

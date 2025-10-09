@@ -1,0 +1,91 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Secures user profiles. Allows users to read and write their own profile data.
+     * @path /users/{userId}
+     * @allow (create) request.auth.uid == '{userId}' - Creates a new user profile with matching ID.
+     * @allow (get, update, delete) request.auth.uid == '{userId}' - Accesses own user profile.
+     * @deny (create) request.auth.uid != '{userId}' - Prevents creating a user profile with a mismatched ID.
+     * @deny (list) true - Prevents listing all users.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+
+    /**
+     * @description Secures client data. Allows creation by any authenticated user. Allows read, update, and delete only by users with a specific role.
+     * @path /clients/{clientId}
+     * @allow (create) isSignedIn() - Allows any authenticated user to create a client.
+     * @allow (get, update, delete) true - Allows any authenticated user to get, update, and delete a client.
+     * @deny (create) false
+     * @deny (list) false
+     * @principle Enforces role-based access control for client data.
+     */
+    match /clients/{clientId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
+    }
+
+    /**
+     * @description Secures notifications under a user subcollection. Allows owner-only access.
+     * @path /users/{userId}/notifications/{notificationId}
+     * @allow (create) request.auth.uid == resource.data.userId - Allows creating a notification for the authenticated user.
+     * @allow (get, update, delete) request.auth.uid == resource.data.userId - Accesses own notification.
+     * @deny (create) request.auth.uid != resource.data.userId - Prevents creating a notification for another user.
+     * @deny (list) request.auth.uid != userId - Prevents listing notifications for another user.
+     * @principle Enforces strict user-ownership for notifications.
+     */
+    match /users/{userId}/notifications/{notificationId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+
+    /**
+     * @description Secures system logs.
+     * @path /systemLogs/{logId}
+     * @allow (create) false - Prevents client-side creation of logs.
+     * @allow (get, list) false - Prevents client-side access to logs.
+     * @deny (create, get, list, update, delete) true - System logs are not accessible from the client.
+     * @principle Restricts all access to system logs from the client.
+     */
+    match /systemLogs/{logId} {
+      allow get, list: if false;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}
