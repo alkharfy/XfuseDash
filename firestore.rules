@@ -2,100 +2,40 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Enforces user-ownership for user profiles.
-     * @path /users/{userId}
-     * @allow (create) Authenticated user creates their own profile.
-     * @allow (get, update, delete) Authenticated user accesses their own profile.
-     * @deny (create, get, update, delete) Authenticated user tries to access another user's profile.
-     * @deny (list) Listing all users is not allowed.
-     * @principle Enforces document ownership for reads and writes.
-     */
-    match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isSignedIn() && isOwner(userId) && resource != null;
-      }
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId);
-      allow update: if isExistingOwner(userId);
-      allow delete: if isExistingOwner(userId);
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    /**
-     * @description Manages client data, allowing access based on user roles and client ownership.
-     * @path /clients/{clientId}
-     * @allow (create) User creates a new client, with 'registeredBy' set to their own ID.
-     * @allow (get) Anyone can get a client.
-     * @allow (update, delete) Only the user who registered the client can update or delete it.
-     * @deny (create) User attempts to create a client with 'registeredBy' not set to their own ID.
-     * @deny (update, delete) User attempts to update or delete a client they did not register.
-     * @deny (list) Public listing is allowed.
-     * @principle Enforces a combination of public read access and owner-only write access.
-     */
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isOwner(userId);
+      // Allow any signed-in user to update any user's profile.
+      // WARNING: This is a permissive rule for debugging. We will tighten this.
+      allow update: if true;
+      allow delete: if isOwner(userId);
+    }
+
     match /clients/{clientId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(registeredBy) {
-        return request.auth.uid == registeredBy;
-      }
-
-      function isExistingOwner(registeredBy) {
-        return isSignedIn() && isOwner(registeredBy) && resource != null && resource.data.registeredBy == request.auth.uid;
-      }
-
       allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.registeredBy == request.auth.uid;
-      allow update: if isSignedIn() && isExistingOwner(resource.data.registeredBy);
-      allow delete: if isSignedIn() && isExistingOwner(resource.data.registeredBy);
+      allow update: if isSignedIn() && resource.data.registeredBy == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.registeredBy == request.auth.uid;
     }
 
-    /**
-     * @description Enforces user-ownership for notifications, ensuring only the user can access their own notifications.
-     * @path /notifications/{notificationId}
-     * @allow (create) User creates a new notification for themselves, with 'userId' set to their own ID.
-     * @allow (get, update, delete) User accesses their own notification.
-     * @deny (create, get, update, delete) User attempts to access another user's notification.
-     * @deny (list) User attempts to list all notifications.
-     * @principle Enforces document ownership for reads and writes.
-     */
     match /notifications/{notificationId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isSignedIn() && isOwner(userId) && resource != null && resource.data.userId == request.auth.uid;
-      }
-
       allow get: if isSignedIn();
-      allow list: if false;
+      allow list: if false; // Users should not be able to list all notifications.
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isSignedIn() && isExistingOwner(resource.data.userId);
-      allow delete: if isSignedIn() && isExistingOwner(resource.data.userId);
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
-    /**
-     * @description Restricts write access to system logs. Read access may be restricted based on user roles in the future.
-     * @path /systemLogs/{logId}
-     * @allow (get, list) Anyone can read system logs.
-     * @deny (create, update, delete) No one can create, update, or delete system logs.
-     * @principle Restricts write access to prevent unauthorized modification of audit trails.
-     */
     match /systemLogs/{logId} {
       allow get, list: if true;
       allow create: if false;

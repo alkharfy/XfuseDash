@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Client } from "@/lib/types";
 import { getSummaryForResearchFile } from "@/app/actions";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuthStore } from "@/hooks/use-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { File, Loader2, Sparkles, Upload } from "lucide-react";
@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 
 export function MarketResearchSection({ client }: { client: Client }) {
-    const { role } = useAuth();
+    const { role } = useAuthStore();
     const [summary, setSummary] = useState(client.marketResearchSummary || "");
     const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
