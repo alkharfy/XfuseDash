@@ -3,7 +3,7 @@
 import { Client } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Check, MoreVertical, X } from "lucide-react";
+import { Calendar, Check, MoreVertical, PlusCircle, X } from "lucide-react";
 import { formatTimestamp } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,6 +11,7 @@ import { useFirestore, useMemoFirebase } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { ApproveClientDialog } from "./approve-client-dialog";
+import { AddAppointmentDialog } from "./add-appointment-dialog";
 
 export function PRSection({ client }: { client: Client }) {
     const firestore = useFirestore();
@@ -69,13 +70,21 @@ export function PRSection({ client }: { client: Client }) {
                 </div>
 
                 <div>
-                    <h4 className="font-semibold mb-2">المواعيد</h4>
+                    <div className="flex justify-between items-center mb-2">
+                        <h4 className="font-semibold">المواعيد</h4>
+                        <AddAppointmentDialog client={client}>
+                             <Button variant="outline" size="sm">
+                                <PlusCircle className="ms-2 h-4 w-4" />
+                                إضافة موعد
+                            </Button>
+                        </AddAppointmentDialog>
+                    </div>
                     <div className="space-y-2">
                         {client.prAppointments?.length ? client.prAppointments.map((appt, index) => (
                             <div key={index} className="flex items-center justify-between p-2 rounded-md border">
                                 <div className="flex items-center gap-2">
                                     <Calendar className="h-4 w-4 text-muted-foreground" />
-                                    <span>{formatTimestamp(appt.date)}</span>
+                                    <span>{formatTimestamp(appt.date)} @ {appt.time}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${appt.status === 'scheduled' ? 'bg-blue-100 text-blue-800' : appt.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
