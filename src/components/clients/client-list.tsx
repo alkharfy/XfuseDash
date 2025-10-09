@@ -36,6 +36,8 @@ const filterClients = (clients: Client[], role: UserRole, userId: string, tab: s
         case 'moderator':
             if (tab === 'my-clients') {
                 filtered = clients.filter(c => c.registeredBy === userId);
+            } else {
+                 filtered = clients;
             }
             break;
         case 'pr':
@@ -59,6 +61,7 @@ const filterClients = (clients: Client[], role: UserRole, userId: string, tab: s
             } else if (tab === 'not-started') {
                 filtered = filtered.filter(c => c.prStatus === 'pending');
             }
+            // "my-clients" is the default, no extra filtering needed after assignedToPR
             break;
         case 'market_researcher':
             filtered = clients.filter(c => c.serviceRequests.marketResearch);
@@ -77,7 +80,7 @@ const filterClients = (clients: Client[], role: UserRole, userId: string, tab: s
         filtered = filtered.filter(client =>
             client.name.toLowerCase().includes(lowercasedTerm) ||
             client.phone.includes(lowercasedTerm) ||
-            (client.basicInfo && client.basicInfo.email.toLowerCase().includes(lowercasedTerm))
+            (client.basicInfo && client.basicInfo.email && client.basicInfo.email.toLowerCase().includes(lowercasedTerm))
         );
     }
     
