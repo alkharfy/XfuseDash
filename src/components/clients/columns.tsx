@@ -83,30 +83,21 @@ export const columns: ColumnDef<Client>[] = [
         header: "الهاتف",
     },
     {
-        accessorKey: "basicInfo.email",
-        header: "البريد الإلكتروني",
-         cell: ({ row }) => row.original.basicInfo?.email || "N/A"
+        accessorKey: "businessName",
+        header: "اسم البيزنس",
     },
     {
-        accessorKey: "prStatus",
-        header: "حالة PR",
+        accessorKey: "status",
+        header: "الحالة",
         cell: ({ row }) => {
-            const status = row.original.prStatus || 'pending';
+            const status = row.original.status || 'pending';
             return <Badge variant={statusVariantMap[status] || 'secondary'}>{statusTranslation[status]}</Badge>
         }
     },
     {
-        accessorKey: "transferStatus",
-        header: "حالة التحويل",
-        cell: ({ row }) => {
-            const status = row.original.transferStatus || 'active';
-            return <Badge variant={statusVariantMap[status] || 'secondary'}>{statusTranslation[status]}</Badge>
-        }
-    },
-    {
-        accessorKey: "registeredAt",
-        header: "تاريخ التسجيل",
-        cell: ({ row }) => formatShortDate(row.original.registeredAt)
+        accessorKey: "transferDate",
+        header: "تاريخ التحويل",
+        cell: ({ row }) => formatShortDate(row.original.transferDate)
     },
     {
         id: "actions",

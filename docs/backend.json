@@ -91,6 +91,35 @@
           "type": "string",
           "description": "Phone number of the client."
         },
+        "businessName": {
+          "type": "string",
+          "description": "The name of the client's business."
+        },
+        "businessField": {
+          "type": "string",
+          "description": "The field or industry of the client's business."
+        },
+        "moderatorId": {
+          "type": "string",
+          "description": "The ID of the moderator assigned to this client."
+        },
+        "socialMediaLinks": {
+          "type": "string",
+          "description": "Links to the client's social media profiles."
+        },
+        "transferDate": {
+          "type": "string",
+          "description": "The date the client was transferred.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The general status of the client (e.g., pending, in_progress)."
+        },
+        "servicesOffered": {
+          "type": "string",
+          "description": "A free-text description of services offered to the client."
+        },
         "registeredBy": {
           "type": "string",
           "description": "Reference to User who registered the client. (Relationship: User 1:N Client)"
@@ -177,6 +206,9 @@
         "id",
         "name",
         "phone",
+        "businessName",
+        "businessField",
+        "moderatorId",
         "registeredBy",
         "registeredAt"
       ]

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -10,33 +9,60 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { addDocumentNonBlocking, useFirestore } from "@/firebase";
+import { addDocumentNonBlocking, useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { useAuthStore } from "@/hooks/use-auth";
-import { collection, serverTimestamp } from "firebase/firestore";
+import { collection, serverTimestamp, where, query } from "firebase/firestore";
 import { Textarea } from "../ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { User } from "@/lib/types";
 
 const clientSchema = z.object({
-  name: z.string().min(3, "يجب أن يكون الاسم 3 أحرف على الأقل."),
+  name: z.string().min(3, "يجب أن يكون اسم العميل 3 أحرف على الأقل."),
   phone: z.string().min(10, "يجب أن يكون رقم الهاتف 10 أرقام على الأقل."),
-  email: z.string().email("البريد الإلكتروني غير صالح."),
+  businessName: z.string().min(2, "اسم البيزنس حقل إجباري."),
+  businessField: z.string().min(2, "مجال البيزنس حقل إجباري."),
+  moderatorId: z.string({ required_error: "الرجاء اختيار مودريتور." }),
+  socialMediaLinks: z.string().optional(),
+  transferDate: z.date().optional(),
+  status: z.enum(['pending', 'in_progress', 'under_review', 'completed']).default('pending'),
+  servicesOffered: z.string().optional(),
+  email: z.string().email("البريد الإلكتروني غير صالح.").optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
 });
 
 export function AddClientDialog({ children }: { children?: React.ReactNode }) {
-  const { user } = useAuthStore();
+  const { user, role } = useAuthStore();
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+
+  const moderatorsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "users"), where("role", "==", "moderator"));
+  }, [firestore]);
+
+  const { data: moderators } = useCollection<User>(moderatorsQuery);
 
   const form = useForm<z.infer<typeof clientSchema>>({
     resolver: zodResolver(clientSchema),
     defaultValues: {
       name: "",
       phone: "",
+      businessName: "",
+      businessField: "",
+      socialMediaLinks: "",
+      servicesOffered: "",
       email: "",
       address: "",
       notes: "",
+      status: "pending",
+      moderatorId: role === 'moderator' ? user?.uid : undefined,
     },
   });
 
@@ -45,22 +71,23 @@ export function AddClientDialog({ children }: { children?: React.ReactNode }) {
     
     const clientsCollection = collection(firestore, 'clients');
     const newClient = {
-      name: values.name,
-      phone: values.phone,
-      basicInfo: {
-        email: values.email,
-        address: values.address || "",
-        notes: values.notes || "",
-      },
+      ...values,
       registeredBy: user.uid,
       registeredAt: serverTimestamp(),
-      prStatus: 'pending',
+      transferDate: values.transferDate ? serverTimestamp() : null,
+      assignedToPR: "", // Explicitly set to empty string
+      prStatus: values.status,
       transferStatus: 'active',
       serviceRequests: {
         marketResearch: false,
         content: false,
         creative: false,
       },
+      basicInfo: {
+          email: values.email || "",
+          address: values.address || "",
+          notes: values.notes || "",
+      }
     };
 
     addDocumentNonBlocking(clientsCollection, newClient);
@@ -72,71 +99,182 @@ export function AddClientDialog({ children }: { children?: React.ReactNode }) {
     form.reset();
     setIsOpen(false);
   };
-
+  
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>إضافة عميل جديد</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>اسم العميل</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>رقم الهاتف</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>البريد الإلكتروني</FormLabel>
-                  <FormControl><Input type="email" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>العنوان</FormLabel>
-                  <FormControl><Input {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[80vh] overflow-y-auto p-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>اسم العميل</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>رقم الهاتف</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="businessName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>اسم البيزنس</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="businessField"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>مجال البيزنس</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="moderatorId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>المودريتور</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={role === 'moderator'}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر المودريتور" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {role === 'moderator' && user ? (
+                           <SelectItem key={user.uid} value={user.uid}>{user.displayName}</SelectItem>
+                        ) : (
+                          moderators?.map(mod => (
+                            <SelectItem key={mod.id} value={mod.id}>{mod.name}</SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="transferDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>تاريخ التحويل</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "d/M/yyyy")
+                            ) : (
+                              <span>اختر تاريخ</span>
+                            )}
+                            <CalendarIcon className="mr-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>الحالة (Statue)</FormLabel>
+                     <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="اختر الحالة" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="pending">معلق</SelectItem>
+                        <SelectItem value="in_progress">قيد التنفيذ</SelectItem>
+                        <SelectItem value="under_review">قيد المراجعة</SelectItem>
+                        <SelectItem value="completed">مكتمل</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>البريد الإلكتروني (اختياري)</FormLabel>
+                    <FormControl><Input type="email" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
              <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>ملاحظات</FormLabel>
-                  <FormControl><Textarea {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                control={form.control}
+                name="socialMediaLinks"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>لينكات السوشيال ميديا</FormLabel>
+                    <FormControl><Textarea {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="servicesOffered"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>الخدمات المعروضة</FormLabel>
+                    <FormControl><Textarea {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="ghost">إلغاء</Button>

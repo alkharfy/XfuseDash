@@ -22,12 +22,20 @@ export interface Client {
   id: string;
   name: string;
   phone: string;
-  registeredBy: string; // userId of moderator
+  businessName: string;
+  businessField: string;
+  moderatorId: string; // This was registeredBy
+  socialMediaLinks?: string;
+  transferDate?: any; // Firestore Timestamp
+  status?: 'pending' | 'in_progress' | 'under_review' | 'completed';
+  servicesOffered?: string;
+
+  registeredBy: string; // userId of who created the entry (can be admin or moderator)
   registeredAt: any; // Firestore Timestamp
-  basicInfo: {
-    email: string;
-    address: string;
-    notes: string;
+  basicInfo?: {
+    email?: string;
+    address?: string;
+    notes?: string;
   };
   
   // PR Fields
