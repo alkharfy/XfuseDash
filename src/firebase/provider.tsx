@@ -50,7 +50,7 @@ export interface UserHookResult { // Renamed from UserAuthHookResult for consist
 }
 
 // React Context
-export const FirebaseContext = createContext<FirebaseContextState | undefined>(undefined);
+export const FirebaseContext = React.createContext<FirebaseContextState | undefined>(undefined);
 
 /**
  * FirebaseProvider manages and provides Firebase services and user authentication state.
@@ -116,7 +116,7 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
  * Throws error if core services are not available or used outside provider.
  */
 export const useFirebase = (): FirebaseServicesAndUser => {
-  const context = useContext(FirebaseContext);
+  const context = React.useContext(FirebaseContext);
 
   if (context === undefined) {
     throw new Error('useFirebase must be used within a FirebaseProvider.');
