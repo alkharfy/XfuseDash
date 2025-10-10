@@ -243,7 +243,18 @@
               "postUrl": { "type": "string" },
               "isBoosted": { "type": "boolean" },
               "boostBudget": { "type": "number" },
-              "utm": { "type": "string" }
+              "utm": { "type": "string" },
+              "reach": { "type": "number" },
+              "impressions": { "type": "number" },
+              "likes": { "type": "number" },
+              "comments": { "type": "number" },
+              "shares": { "type": "number" },
+              "saves": { "type": "number" },
+              "ctr": { "type": "number" },
+              "cpc": { "type": "number" },
+              "cpl": { "type": "number" },
+              "roas": { "type": "number" },
+              "performanceNotes": { "type": "string" }
             }
           }
         },

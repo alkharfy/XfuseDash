@@ -41,7 +41,7 @@ const ideaSchema = z.object({
   // Technical Specs
   dimensions: z.enum(['1:1', '4:5', '9:16', '16:9']).optional(),
   videoDuration: z.coerce.number().optional(),
-  exportPreset: z.string().optional(),
+exportPreset: z.string().optional(),
   subtitles: z.boolean().optional(),
 
   // Workflow
@@ -54,6 +54,19 @@ const ideaSchema = z.object({
   isBoosted: z.boolean().optional(),
   boostBudget: z.coerce.number().optional(),
   utm: z.string().optional(),
+
+  // Performance
+  reach: z.coerce.number().optional(),
+  impressions: z.coerce.number().optional(),
+  likes: z.coerce.number().optional(),
+  comments: z.coerce.number().optional(),
+  shares: z.coerce.number().optional(),
+  saves: z.coerce.number().optional(),
+  ctr: z.coerce.number().optional(),
+  cpc: z.coerce.number().optional(),
+  cpl: z.coerce.number().optional(),
+  roas: z.coerce.number().optional(),
+  performanceNotes: z.string().optional(),
 });
 
 interface IdeaDialogProps {
@@ -120,6 +133,17 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
         isBoosted: idea.isBoosted || false,
         boostBudget: idea.boostBudget || undefined,
         utm: idea.utm || "",
+        reach: idea.reach || undefined,
+        impressions: idea.impressions || undefined,
+        likes: idea.likes || undefined,
+        comments: idea.comments || undefined,
+        shares: idea.shares || undefined,
+        saves: idea.saves || undefined,
+        ctr: idea.ctr || undefined,
+        cpc: idea.cpc || undefined,
+        cpl: idea.cpl || undefined,
+        roas: idea.roas || undefined,
+        performanceNotes: idea.performanceNotes || "",
     } 
     : {
       title: "",
@@ -148,6 +172,17 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
       isBoosted: false,
       boostBudget: undefined,
       utm: "",
+      reach: undefined,
+      impressions: undefined,
+      likes: undefined,
+      comments: undefined,
+      shares: undefined,
+      saves: undefined,
+      ctr: undefined,
+      cpc: undefined,
+      cpl: undefined,
+      roas: undefined,
+      performanceNotes: "",
     },
   });
 
@@ -560,6 +595,49 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
                         <FormItem>
                             <FormLabel>UTM Parameters</FormLabel>
                             <FormControl><Input {...field} placeholder="utm_source=..."/></FormControl>
+                        </FormItem>
+                    )} />
+                </div>
+
+                {/* Performance Section */}
+                <div className="space-y-4 p-4 border rounded-lg">
+                    <h3 className="font-semibold text-lg">6. قياس الأداء</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <FormField control={form.control} name="reach" render={({ field }) => (
+                            <FormItem><FormLabel>Reach</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="impressions" render={({ field }) => (
+                            <FormItem><FormLabel>Impressions</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="likes" render={({ field }) => (
+                            <FormItem><FormLabel>Likes</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="comments" render={({ field }) => (
+                            <FormItem><FormLabel>Comments</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="shares" render={({ field }) => (
+                            <FormItem><FormLabel>Shares</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="saves" render={({ field }) => (
+                            <FormItem><FormLabel>Saves</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="ctr" render={({ field }) => (
+                            <FormItem><FormLabel>CTR (%)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="cpc" render={({ field }) => (
+                            <FormItem><FormLabel>CPC</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="cpl" render={({ field }) => (
+                            <FormItem><FormLabel>CPL</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="roas" render={({ field }) => (
+                            <FormItem><FormLabel>ROAS</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
+                        )} />
+                    </div>
+                     <FormField control={form.control} name="performanceNotes" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>ملاحظات الأداء</FormLabel>
+                            <FormControl><Textarea {...field} /></FormControl>
                         </FormItem>
                     )} />
                 </div>
