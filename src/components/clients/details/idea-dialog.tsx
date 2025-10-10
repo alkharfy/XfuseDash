@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
@@ -31,7 +31,8 @@ const ideaSchema = z.object({
   
   // Creative
   caption: z.string().optional(),
-  cta: z.enum(['whatsapp', 'book_now', 'shop_now', 'learn_more', 'subscribe']).optional(),
+  cta: z.string().optional(),
+  customCta: z.string().optional(),
   hashtags: z.string().optional(),
   designNotes: z.string().optional(),
   references: z.string().optional(),
@@ -62,9 +63,24 @@ const availableBrandAssets = [
     { id: 'product_library', label: 'مكتبة منتجات' },
 ]
 
+const ctaOptions = [
+    { value: 'تواصل واتساب', label: 'تواصل واتساب' },
+    { value: 'احجز الآن', label: 'احجز الآن' },
+    { value: 'اشتري الآن', label: 'اشتري الآن' },
+    { value: 'اعرف المزيد', label: 'اعرف المزيد' },
+    { value: 'تواصل معنا', label: 'تواصل معنا' },
+    { value: 'اشترك', label: 'اشترك' },
+    { value: 'سجّل', label: 'سجّل' },
+    { value: 'حمّل الدليل', label: 'حمّل الدليل' },
+    { value: 'استخدم الكوبون', label: 'استخدم الكوبون' },
+    { value: 'custom', label: 'قيمة مخصصة...' },
+];
+
 export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: IdeaDialogProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
+  
+  const isCustomCta = ctaOptions.find(opt => opt.value === idea?.cta) === undefined && !!idea?.cta;
 
   const form = useForm<z.infer<typeof ideaSchema>>({
     resolver: zodResolver(ideaSchema),
@@ -79,7 +95,8 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
         campaign: idea.campaign || "",
         targetAudience: idea.targetAudience || "",
         caption: idea.caption || "",
-        cta: idea.cta,
+        cta: isCustomCta ? 'custom' : idea.cta || undefined,
+        customCta: isCustomCta ? idea.cta : "",
         hashtags: idea.hashtags || "",
         designNotes: idea.designNotes || "",
         references: idea.references || "",
@@ -101,6 +118,7 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
       targetAudience: "",
       caption: "",
       cta: undefined,
+      customCta: "",
       hashtags: "",
       designNotes: "",
       references: "",
@@ -112,6 +130,8 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
       approvalStatus: 'draft',
     },
   });
+
+  const watchCta = useWatch({ control: form.control, name: 'cta' });
 
   const onSubmit = (values: z.infer<typeof ideaSchema>) => {
     if (!firestore || !selectedDate) {
@@ -127,18 +147,22 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
     const currentCalendar = client.contentCalendar || [];
     
     let newCalendar: CalendarEntry[];
+    
+    const finalCta = values.cta === 'custom' ? values.customCta : values.cta;
+    const dataToSave = { ...values, cta: finalCta };
+    delete (dataToSave as any).customCta;
 
     if(idea) { // Editing existing idea
         newCalendar = currentCalendar.map(entry => {
             if(entry.id === idea.id) {
-                return { ...entry, ...values, title: values.title };
+                return { ...entry, ...dataToSave, title: dataToSave.title };
             }
             return entry;
         });
     } else { // Adding new idea
         const newIdea: CalendarEntry = {
-            ...values,
-            title: values.title,
+            ...dataToSave,
+            title: dataToSave.title,
             id: uuidv4(),
             date: selectedDate,
         };
@@ -300,15 +324,21 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl><SelectTrigger><SelectValue placeholder="اختر CTA..." /></SelectTrigger></FormControl>
                                 <SelectContent>
-                                    <SelectItem value="whatsapp">تواصل واتساب</SelectItem>
-                                    <SelectItem value="book_now">احجز الآن</SelectItem>
-                                    <SelectItem value="shop_now">تسوق الآن</SelectItem>
-                                    <SelectItem value="learn_more">اعرف المزيد</SelectItem>
-                                    <SelectItem value="subscribe">اشترك</SelectItem>
+                                    {ctaOptions.map(option => (
+                                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </FormItem>
                         )} />
+                        {watchCta === 'custom' && (
+                            <FormField control={form.control} name="customCta" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>CTA المخصص</FormLabel>
+                                    <FormControl><Input {...field} placeholder="أدخل النص المخصص هنا..."/></FormControl>
+                                </FormItem>
+                            )} />
+                        )}
                         <FormField control={form.control} name="hashtags" render={({ field }) => (
                         <FormItem>
                             <FormLabel>الهاشتاجات</FormLabel>

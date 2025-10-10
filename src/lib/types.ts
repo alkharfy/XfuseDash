@@ -102,7 +102,7 @@ export interface CalendarEntry {
   // Creative & Copy
   title?: string;
   caption?: string;
-  cta?: 'whatsapp' | 'book_now' | 'shop_now' | 'learn_more' | 'subscribe';
+  cta?: string;
   hashtags?: string;
   designNotes?: string;
   references?: string;
