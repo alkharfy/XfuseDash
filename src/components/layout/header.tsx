@@ -14,7 +14,7 @@ export default function Header() {
        <div className="flex items-center gap-2 md:hidden">
           <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold">
             <Zap className="h-6 w-6 text-primary" />
-            <span className="sr-only">MarketFlow</span>
+            <span className="sr-only">xfuse</span>
           </Link>
         </div>
 

@@ -44,7 +44,7 @@ export default function SidebarNav() {
         <div className="h-16 flex items-center px-6 border-b">
              <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
                 <Zap className="h-6 w-6 text-primary" />
-                <span className="font-headline text-lg">MarketFlow</span>
+                <span className="font-headline text-lg">xfuse</span>
             </Link>
         </div>
         <nav className="flex-1 p-4 space-y-2">

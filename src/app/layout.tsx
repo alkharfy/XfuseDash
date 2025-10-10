@@ -8,7 +8,7 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
-  title: 'MarketFlow',
+  title: 'xfuse',
   description: 'Comprehensive marketing team management dashboard.',
 };
 

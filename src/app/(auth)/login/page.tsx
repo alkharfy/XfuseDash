@@ -8,7 +8,7 @@ export default function LoginPage() {
           <div className="mb-8 flex flex-col items-center">
               <div className="mb-4 flex items-center gap-2 text-2xl font-bold text-primary">
                   <Zap className="h-8 w-8" />
-                  <h1 className="font-headline text-3xl">MarketFlow</h1>
+                  <h1 className="font-headline text-3xl">xfuse</h1>
               </div>
             <p className="text-muted-foreground">لوحة تحكم فريق التسويق المتكاملة</p>
           </div>
