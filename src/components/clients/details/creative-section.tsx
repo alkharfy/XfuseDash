@@ -40,7 +40,7 @@ export function CreativeSection({ client }: { client: Client }) {
     const calendarEntries = client.contentCalendar || [];
 
     const ideasForSelectedDate = date 
-        ? calendarEntries.filter(entry => new Date(entry.date.seconds * 1000).toDateString() === date.toDateString())
+        ? calendarEntries.filter(entry => entry.date && new Date(entry.date.seconds * 1000).toDateString() === date.toDateString())
         : [];
     
     const handleAddIdea = () => {
@@ -82,14 +82,16 @@ export function CreativeSection({ client }: { client: Client }) {
                     <div className="space-y-2">
                         {ideasForSelectedDate.length > 0 ? (
                             ideasForSelectedDate.map((idea) => (
-                                <button key={idea.id} onClick={() => handleEditIdea(idea)} className="w-full text-right p-3 border rounded-md text-sm hover:bg-muted transition-colors">
-                                    <div className="flex justify-between items-center">
-                                       <p className="font-medium">{idea.title || idea.idea}</p>
-                                       <Badge variant={approvalStatusVariantMap[idea.approvalStatus || idea.status || 'draft'] || 'outline'}>
-                                            {approvalStatusTranslation[idea.approvalStatus || idea.status || 'draft']}
-                                       </Badge>
-                                    </div>
-                                </button>
+                                <div key={idea.id}>
+                                    <button onClick={() => handleEditIdea(idea)} className="w-full text-right p-3 border rounded-md text-sm hover:bg-muted transition-colors">
+                                        <div className="flex justify-between items-center">
+                                           <p className="font-medium">{idea.title || idea.idea}</p>
+                                           <Badge variant={approvalStatusVariantMap[idea.approvalStatus || idea.status || 'draft'] || 'outline'}>
+                                                {approvalStatusTranslation[idea.approvalStatus || idea.status || 'draft']}
+                                           </Badge>
+                                        </div>
+                                    </button>
+                                </div>
                             ))
                         ) : (
                             <p className="text-sm text-center text-muted-foreground pt-4">لا توجد أفكار لهذا اليوم.</p>
