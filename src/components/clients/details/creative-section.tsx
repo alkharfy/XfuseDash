@@ -81,8 +81,8 @@ export function CreativeSection({ client }: { client: Client }) {
                     </div>
                     <div className="space-y-2">
                         {ideasForSelectedDate.length > 0 ? (
-                            ideasForSelectedDate.map((idea) => (
-                                <div key={idea.id}>
+                            ideasForSelectedDate.map((idea, index) => (
+                                <div key={idea.id || index}>
                                     <button onClick={() => handleEditIdea(idea)} className="w-full text-right p-3 border rounded-md text-sm hover:bg-muted transition-colors">
                                         <div className="flex justify-between items-center">
                                            <p className="font-medium">{idea.title || idea.idea}</p>
