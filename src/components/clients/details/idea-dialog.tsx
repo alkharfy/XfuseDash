@@ -220,8 +220,9 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
     delete (dataToSave as any).customCta;
 
     Object.keys(dataToSave).forEach(key => {
-        if (dataToSave[key as keyof typeof dataToSave] === undefined) {
-            delete dataToSave[key as keyof typeof dataToSave];
+        const K = key as keyof typeof dataToSave;
+        if (dataToSave[K] === undefined) {
+            delete dataToSave[K];
         }
     });
 
@@ -532,7 +533,7 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
                  {/* Workflow Section */}
                 <div className="space-y-4 p-4 border rounded-lg">
                   <h3 className="font-semibold text-lg">4. سير العمل والتسليمات</h3>
-                  { (role === 'admin' || role === 'moderator' || role === 'creative') &&
+                  { (role === 'admin' || role === 'moderator') &&
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}

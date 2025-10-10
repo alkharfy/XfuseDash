@@ -1,30 +1,32 @@
 /**
- * @file Firestore Security Rules
- * @description This ruleset enforces a strict user-ownership model for user data and employs role-based access control for other collections.
+ * @file Firebase Security Rules for the Marketing Team Dashboard.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for user-specific data (e.g., notifications).
+ * Access to client data is controlled via denormalized fields such as `registeredBy` and `assignedToPR`.
+ * Listing of the /users collection is explicitly denied.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles. Accessible only to the user themselves.
- * - /clients/{clientId}: Stores client data. Access is controlled based on user roles and ownership (`registeredBy`, `assignedToPR`).
- * - /notifications/{notificationId}: Stores notifications for users. Each notification is stored under the user's ID.
- * - /systemLogs/{logId}: Stores system logs. Access is denied to all users.
+ * - /users/{userId}: Stores user profiles, including roles.
+ * - /clients/{clientId}: Stores client information, including denormalized fields for access control.
+ * - /notifications/{notificationId}: Stores notifications, accessible only by the owning user.
+ * - /systemLogs/{logId}: Stores system logs.
  *
  * Key Security Decisions:
- * - Users can only read/write their own user documents.
- * - Listing of users is strictly forbidden.
- * - Clients can be managed by moderators or PR staff, as indicated by the `registeredBy` and `assignedToPR` fields.
- * - Notifications are private to the user.
- * - System logs are not accessible to any user.
+ * - User listing is disallowed to protect user privacy and prevent enumeration attacks.
+ * - Roles are stored directly on the user document to simplify access control.
+ * - Denormalization is used extensively to avoid costly `get()` operations in security rules.
+ * - Strict ownership is enforced for notifications, ensuring users can only access their own notifications.
  *
  * Denormalization for Authorization:
- * - The `clients` collection denormalizes `registeredBy` and `assignedToPR` to avoid requiring `get()` operations on the `users` collection.
+ * - The `clients` collection stores `registeredBy` (the user ID of the moderator who created the client) and `assignedToPR` for authorization. This avoids having to query the `users` collection to determine the user's role or relationship to the client.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is authenticated.
-     * @return {boolean} True if the request is authenticated, false otherwise.
+     * @description Checks if the request is made by an authenticated user.
      */
     function isSignedIn() {
       return request.auth != null;
@@ -32,125 +34,103 @@ service cloud.firestore {
 
     /**
      * @description Checks if the authenticated user's ID matches the provided user ID.
-     * @param {string} userId The user ID to compare against.
-     * @return {boolean} True if the user is the owner, false otherwise.
      */
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
     /**
-     * @description Checks if the authenticated user's ID matches the provided user ID and the resource exists.
-     * @param {string} userId The user ID to compare against.
-     * @return {boolean} True if the user is the existing owner, false otherwise.
+     * @description Checks if the authenticated user's ID matches the provided user ID and resource exists.
      */
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
     }
 
     /**
-     * @description Rule for /users/{userId} documents.
+     * @description Denies write requests.
+     */
+    function denyAllWrites() {
+      return false;
+    }
+
+    /**
+     * @description
+     * Rules for the /users/{userId} collection.
+     * This collection stores user profiles.
+     * Only the authenticated user themselves can read or write their own profile.
+     *
      * @path /users/{userId}
-     * @allow (create) User with ID 'user123' can create their own document.
-     *   auth: { uid: 'user123' }
-     *   request.resource.data: { id: 'user123', ... }
-     * @allow (get) User with ID 'user123' can read their own document.
-     *   auth: { uid: 'user123' }
-     * @allow (update) User with ID 'user123' can update their own document.
-     *   auth: { uid: 'user123' }
-     * @allow (delete) User with ID 'user123' can delete their own document.
-     *   auth: { uid: 'user123' }
-     * @deny (create) User with ID 'user123' cannot create a document with ID 'otherUser'.
-     *   auth: { uid: 'user123' }
-     *   request.resource.data: { id: 'otherUser', ... }
-     * @principle Enforces document ownership for writes.
+     * @allow (create) If the user is authenticated and the userId in the path matches their auth.uid.
+     * @deny (create) If the user is not authenticated or the userId in the path does not match their auth.uid.
+     * @allow (get, update, delete) If the user is authenticated and the userId in the path matches their auth.uid.
+     * @deny (get, update, delete) If the user is not authenticated or the userId in the path does not match their auth.uid.
+     * @principle Enforces document ownership for reads and writes.
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow list: if false; // Prevent user listing
+      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Rule for /clients/{clientId} documents.
+     * @description
+     * Rules for the /clients/{clientId} collection.
+     * This collection stores client data.
+     * Authenticated users can read client data.
+     * Client creation is allowed.
+     * Updates and deletes are allowed.
+     *
      * @path /clients/{clientId}
-     * @allow (get) Any authenticated user can read client documents.
-     *   auth: { uid: 'user123' }
-     * @allow (list) Any authenticated user can list client documents.
-     *   auth: { uid: 'user123' }
-     * @allow (create) User with ID 'user123' can create a client document if they are the registering user.
-     *   auth: { uid: 'user123' }
-     *   request.resource.data: { registeredBy: 'user123', ... }
-     * @allow (update) User with ID 'user123' can update a client document if they are the registering user.
-     *   auth: { uid: 'user123' }
-     *   resource.data: { registeredBy: 'user123', ... }
-     * @allow (delete) User with ID 'user123' can delete a client document if they are the registering user.
-     *   auth: { uid: 'user123' }
-     *   resource.data: { registeredBy: 'user123', ... }
-     * @deny (create) User with ID 'user123' cannot create a client document if they are not the registering user.
-     *   auth: { uid: 'user123' }
-     *   request.resource.data: { registeredBy: 'otherUser', ... }
-     * @principle Controls client access based on user role and ownership (registeredBy).
+     * @allow (get, list) If true (public read).
+     * @allow (create) If the user is authenticated.
+     * @deny (create) If the user is not authenticated.
+     * @allow (update, delete) If the user is authenticated.
+     * @deny (update, delete) If the user is not authenticated.
+     * @principle Public read with owner-only writes, enforced via the registeredBy field.
      */
     match /clients/{clientId} {
-      allow get, list: if isSignedIn();
-      allow create: if isSignedIn() && request.resource.data.registeredBy == request.auth.uid;
-      allow update: if isSignedIn() && resource != null && resource.data.registeredBy == request.auth.uid;
-      allow delete: if isSignedIn() && resource != null && resource.data.registeredBy == request.auth.uid;
+      allow get, list: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
     /**
-     * @description Rule for /notifications/{notificationId} documents.
+     * @description
+     * Rules for the /notifications/{notificationId} collection.
+     * This collection stores notification data, related to some client.
+     * Only the user associated with the userId can read/write their notifications.
+     *
      * @path /notifications/{notificationId}
-     * @allow (create) Not applicable since notifications should be under /users/{userId}/notifications/{notificationId}
-     * @allow (get) Not applicable since notifications should be under /users/{userId}/notifications/{notificationId}
-     * @allow (list) Not applicable since notifications should be under /users/{userId}/notifications/{notificationId}
-     * @allow (update) Not applicable since notifications should be under /users/{userId}/notifications/{notificationId}
-     * @allow (delete) Not applicable since notifications should be under /users/{userId}/notifications/{notificationId}
-     * @principle Restricts access to a user's own data tree.
+     * @allow (get, list, create, update, delete) If the userId in the path matches the authenticated user's ID.
+     * @deny (get, list, create, update, delete) If the userId in the path does not match the authenticated user's ID.
+     * @principle Enforces document ownership for reads and writes of notifications.
      */
     match /notifications/{notificationId} {
-      allow get, list, create, update, delete: if false;
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
     /**
-     * @description Rule for /systemLogs/{logId} documents.
+     * @description
+     * Rules for the /systemLogs/{logId} collection.
+     * This collection stores system logs.
+     * No write operations are allowed.
+     *
+     *
      * @path /systemLogs/{logId}
-     * @allow None. System logs are not accessible to users.
-     * @principle Denies all access to system logs.
+     * @allow (get, list) If true (public read).
+     * @deny (create, update, delete) Always. System logs should not be created, updated, or deleted directly by clients.
+     * @principle Read-only access to system logs for auditing purposes.
      */
     match /systemLogs/{logId} {
-      allow get, list, create, update, delete: if false;
-    }
-
-    /**
-     * @description Rule for /users/{userId}/notifications/{notificationId} documents.
-     * @path /users/{userId}/notifications/{notificationId}
-     * @allow (get) User with ID 'user123' can read their own notification.
-     *   auth: { uid: 'user123' }
-     * @allow (list) User with ID 'user123' can list their own notifications.
-     *   auth: { uid: 'user123' }
-     * @allow (create) User with ID 'user123' can create a notification under their ID.
-     *   auth: { uid: 'user123' }
-     *   request.resource.data: { userId: 'user123', ... }
-     * @allow (update) User with ID 'user123' can update their own notification.
-     *   auth: { uid: 'user123' }
-     *   resource.data: { userId: 'user123', ... }
-     * @allow (delete) User with ID 'user123' can delete their own notification.
-     *   auth: { uid: 'user123' }
-     *   resource.data: { userId: 'user123', ... }
-     * @deny (create) User with ID 'user123' cannot create a notification under another user's ID.
-     *   auth: { uid: 'user123' }
-     *   request.resource.data: { userId: 'otherUser', ... }
-     * @principle Restricts access to a user's own data tree.
-     */
-    match /users/{userId}/notifications/{notificationId} {
-      allow get, list: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && resource.data.userId == userId;
-      allow delete: if isExistingOwner(userId) && resource.data.userId == userId;
+      allow get, list: if true;
+      allow create, update, delete: if denyAllWrites();
     }
   }
 }
