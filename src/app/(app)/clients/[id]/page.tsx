@@ -66,16 +66,15 @@ export default function ClientDetailPage() {
                             </CardHeader>
                             <CardContent className="space-y-2 text-sm">
                                 <p><strong>الهاتف:</strong> {client.phone}</p>
-                                <p><strong>الإيميل:</strong> {client.basicInfo.email}</p>
-                                <p><strong>العنوان:</strong> {client.basicInfo.address}</p>
-                                <p><strong>ملاحظات:</strong> {client.basicInfo.notes}</p>
+                                {client.basicInfo.email && <p><strong>الإيميل:</strong> {client.basicInfo.email}</p>}
+                                {client.basicInfo.address && <p><strong>العنوان:</strong> {client.basicInfo.address}</p>}
+                                {client.basicInfo.notes && <p><strong>ملاحظات:</strong> {client.basicInfo.notes}</p>}
                             </CardContent>
                         </Card>
                     )}
-
-                    {client.finalAgreement && <AgreementSection client={client} />}
                 </div>
             </div>
+             {client.transferStatus === 'approved' && <AgreementSection client={client} />}
         </div>
     );
 }
