@@ -1,136 +1,101 @@
 /**
- * @file Firebase Security Rules for the Marketing Team Dashboard.
- *
- * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for user-specific data (e.g., notifications).
- * Access to client data is controlled via denormalized fields such as `registeredBy` and `assignedToPR`.
- * Listing of the /users collection is explicitly denied.
+ * @file Firestore Security Rules
+ * @description This ruleset enforces a strict user-ownership model for user data and allows controlled access to client and system log data.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles, including roles.
- * - /clients/{clientId}: Stores client information, including denormalized fields for access control.
- * - /notifications/{notificationId}: Stores notifications, accessible only by the owning user.
- * - /systemLogs/{logId}: Stores system logs.
+ * - /users/{userId}: Stores user profiles.  Access is restricted to the user themselves.
+ * - /clients/{clientId}: Stores client information. Read access is public, but write access is restricted to authorized users (TODO).
+ * - /notifications/{notificationId}: Stores user-specific notifications. Access is restricted to the user and admin (TODO).
+ * - /systemLogs/{logId}: Stores system log entries. Access is restricted to authorized users or processes (TODO).
  *
  * Key Security Decisions:
- * - User listing is disallowed to protect user privacy and prevent enumeration attacks.
- * - Roles are stored directly on the user document to simplify access control.
- * - Denormalization is used extensively to avoid costly `get()` operations in security rules.
- * - Strict ownership is enforced for notifications, ensuring users can only access their own notifications.
+ * - Users can only read/write their own profile data.  Listing all users is disallowed.
+ * - Read access to clients is public to facilitate application functionality (TODO secure writes later).
+ * - Notifications and system logs are currently placeholders with open read access and restricted write access (TODO secure writes later).
  *
  * Denormalization for Authorization:
- * - The `clients` collection stores `registeredBy` (the user ID of the moderator who created the client) and `assignedToPR` for authorization. This avoids having to query the `users` collection to determine the user's role or relationship to the client.
+ *  - The security rules rely on `request.auth.uid` for identity verification.
+ *  - For the `/users/{userId}` collection, the `userId` in the path is matched against the `request.auth.uid` to ensure ownership.
+ *
+ * Structural Segregation:
+ * - Private user data is stored under the `/users/{userId}` collection, ensuring it's not mixed with public data.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Checks if the request is made by an authenticated user.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the authenticated user's ID matches the provided user ID.
-     */
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the authenticated user's ID matches the provided user ID and resource exists.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Denies write requests.
-     */
-    function denyAllWrites() {
-      return false;
-    }
-
-    /**
-     * @description
-     * Rules for the /users/{userId} collection.
-     * This collection stores user profiles.
-     * Only the authenticated user themselves can read or write their own profile.
-     *
+     * @description Controls access to user profile data.
      * @path /users/{userId}
-     * @allow (create) If the user is authenticated and the userId in the path matches their auth.uid.
-     * @deny (create) If the user is not authenticated or the userId in the path does not match their auth.uid.
-     * @allow (get, update, delete) If the user is authenticated and the userId in the path matches their auth.uid.
-     * @deny (get, update, delete) If the user is not authenticated or the userId in the path does not match their auth.uid.
-     * @principle Enforces document ownership for reads and writes.
+     * @allow (create) User with ID 'user123' can create their own profile.
+     * @allow (get) User with ID 'user123' can read their own profile.
+     * @allow (update) User with ID 'user123' can update their own profile.
+     * @allow (delete) User with ID 'user123' can delete their own profile.
+     * @deny (create) User with ID 'user123' cannot create a profile for 'user456'.
+     * @deny (get) User with ID 'user123' cannot read the profile of 'user456'.
+     * @principle Enforces document ownership for writes and restricts read access to the owner.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false; // Prevent user listing
-      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      // Helper function to check if the authenticated user is the owner of the document
+      function isOwner(userId) {
+        return request.auth != null && request.auth.uid == userId;
+      }
+        allow get: if isOwner(userId);
+        allow list: if false;
+        allow create: if isOwner(userId) && request.resource.data.id == userId;
+        allow update: if isOwner(userId) && resource.data.id == userId;
+        allow delete: if isOwner(userId) && resource != null;
     }
 
     /**
-     * @description
-     * Rules for the /clients/{clientId} collection.
-     * This collection stores client data.
-     * Authenticated users can read client data.
-     * Client creation is allowed.
-     * Updates and deletes are allowed.
-     *
+     * @description Controls access to client data.  Read access is public, write access is restricted (TODO).
      * @path /clients/{clientId}
-     * @allow (get, list) If true (public read).
-     * @allow (create) If the user is authenticated.
-     * @deny (create) If the user is not authenticated.
-     * @allow (update, delete) If the user is authenticated.
-     * @deny (update, delete) If the user is not authenticated.
-     * @principle Public read with owner-only writes, enforced via the registeredBy field.
+     * @allow (get) Any user can read a client's data.
+     * @allow (list) Any user can list clients.
+     * @deny (create) No one can create a client document without authorization.
+     * @deny (update) No one can update a client document without authorization.
+     * @principle Allows public read access, but requires owner-only writes (TODO).
      */
     match /clients/{clientId} {
-      allow get, list: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
+        allow get: if true;
+        allow list: if true;
+        allow create: if false; // TODO: Add owner validation once roles are properly defined.
+        allow update: if false && resource != null; // TODO: Add owner validation once roles are properly defined.
+        allow delete: if false && resource != null; // TODO: Add owner validation once roles are properly defined.
     }
 
     /**
-     * @description
-     * Rules for the /notifications/{notificationId} collection.
-     * This collection stores notification data, related to some client.
-     * Only the user associated with the userId can read/write their notifications.
-     *
+     * @description Controls access to notifications. Read access is public, write access is restricted (TODO).
      * @path /notifications/{notificationId}
-     * @allow (get, list, create, update, delete) If the userId in the path matches the authenticated user's ID.
-     * @deny (get, list, create, update, delete) If the userId in the path does not match the authenticated user's ID.
-     * @principle Enforces document ownership for reads and writes of notifications.
+     * @allow (get) Any user can read a notification.
+     * @allow (list) Any user can list notifications.
+     * @deny (create) No one can create a notification document without authorization.
+     * @deny (update) No one can update a notification document without authorization.
+     * @principle Allows public read access, but requires owner-only writes (TODO).
      */
     match /notifications/{notificationId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
+        allow get: if true;
+        allow list: if true;
+        allow create: if false; // TODO: Add owner validation once roles are properly defined.
+        allow update: if false && resource != null; // TODO: Add owner validation once roles are properly defined.
+        allow delete: if false && resource != null; // TODO: Add owner validation once roles are properly defined.
     }
 
     /**
-     * @description
-     * Rules for the /systemLogs/{logId} collection.
-     * This collection stores system logs.
-     * No write operations are allowed.
-     *
-     *
+     * @description Controls access to system logs.  Read access is public, write access is restricted (TODO).
      * @path /systemLogs/{logId}
-     * @allow (get, list) If true (public read).
-     * @deny (create, update, delete) Always. System logs should not be created, updated, or deleted directly by clients.
-     * @principle Read-only access to system logs for auditing purposes.
+     * @allow (get) Any user can read a system log.
+     * @allow (list) Any user can list system logs.
+     * @deny (create) No one can create a system log document without authorization.
+     * @deny (update) No one can update a system log document without authorization.
+     * @principle Allows public read access, but requires owner-only writes (TODO).
      */
     match /systemLogs/{logId} {
-      allow get, list: if true;
-      allow create, update, delete: if denyAllWrites();
+        allow get: if true;
+        allow list: if true;
+        allow create: if false; // TODO: Add owner validation once roles are properly defined.
+        allow update: if false && resource != null; // TODO: Add owner validation once roles are properly defined.
+        allow delete: if false && resource != null; // TODO: Add owner validation once roles are properly defined.
     }
   }
 }

@@ -6,6 +6,7 @@ import type { User, UserRole } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FormControl } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
+import { useAuthStore } from "@/hooks/use-auth";
 
 interface UserSelectorProps {
     selectedUser?: string;
@@ -16,13 +17,20 @@ interface UserSelectorProps {
 
 export function UserSelector({ selectedUser, onSelectUser, roles, placeholder = "اختر مستخدم..." }: UserSelectorProps) {
     const firestore = useFirestore();
+    const { role: currentUserRole } = useAuthStore();
+
+    const canListUsers = currentUserRole === 'admin' || currentUserRole === 'moderator';
 
     const usersQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        if (!firestore || !canListUsers) return null;
         return query(collection(firestore, "users"), where("role", "in", roles));
-    }, [firestore, roles]);
+    }, [firestore, roles, canListUsers]);
 
     const { data: users, isLoading } = useCollection<User>(usersQuery);
+
+    if (!canListUsers) {
+        return null;
+    }
 
     if (isLoading) {
         return <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> جاري تحميل المستخدمين...</div>;
