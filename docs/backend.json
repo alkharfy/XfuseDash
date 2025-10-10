@@ -208,7 +208,30 @@
           "type": "array",
           "description": "Array of content calender.",
           "items": {
-            "type": "string"
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "date": { "type": "string", "format": "date-time" },
+              "platform": { "type": "string" },
+              "format": { "type": "string" },
+              "postGoal": { "type": "string" },
+              "contentPillar": { "type": "string" },
+              "campaign": { "type": "string" },
+              "targetAudience": { "type": "string" },
+              "language": { "type": "string" },
+              "title": { "type": "string" },
+              "caption": { "type": "string" },
+              "cta": { "type": "string" },
+              "hashtags": { "type": "string" },
+              "designNotes": { "type": "string" },
+              "references": { "type": "string" },
+              "brandAssets": { "type": "array", "items": { "type": "string" } },
+              "approvalStatus": { "type": "string" },
+              "dimensions": { "type": "string" },
+              "videoDuration": { "type": "number" },
+              "exportPreset": { "type": "string" },
+              "subtitles": { "type": "boolean" }
+            }
           }
         },
         "contentStatus": {

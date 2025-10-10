@@ -37,6 +37,12 @@ const ideaSchema = z.object({
   references: z.string().optional(),
   brandAssets: z.array(z.string()).optional(),
 
+  // Technical Specs
+  dimensions: z.enum(['1:1', '4:5', '9:16', '16:9']).optional(),
+  videoDuration: z.coerce.number().optional(),
+  exportPreset: z.string().optional(),
+  subtitles: z.boolean().optional(),
+
   // Workflow
   approvalStatus: z.enum(['draft', 'review', 'with_client', 'approved', 'rejected']).optional(),
 });
@@ -78,6 +84,10 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
         designNotes: idea.designNotes || "",
         references: idea.references || "",
         brandAssets: idea.brandAssets || [],
+        dimensions: idea.dimensions,
+        videoDuration: idea.videoDuration || 0,
+        exportPreset: idea.exportPreset || "",
+        subtitles: idea.subtitles || false,
         approvalStatus: idea.approvalStatus || (idea.status ? 'draft' : undefined)
     } 
     : {
@@ -95,6 +105,10 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
       designNotes: "",
       references: "",
       brandAssets: [],
+      dimensions: undefined,
+      videoDuration: 0,
+      exportPreset: "",
+      subtitles: false,
       approvalStatus: 'draft',
     },
   });
@@ -363,9 +377,57 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
                         />
                 </div>
                 
+                 {/* Technical Specs Section */}
+                <div className="space-y-4 p-4 border rounded-lg">
+                  <h3 className="font-semibold text-lg">3. المواصفات الفنية</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="dimensions" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>المقاس/النسبة</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="اختر المقاس..." /></SelectTrigger></FormControl>
+                            <SelectContent>
+                               <SelectItem value="1:1">1:1 (Square)</SelectItem>
+                               <SelectItem value="4:5">4:5 (Portrait)</SelectItem>
+                               <SelectItem value="9:16">9:16 (Story/Reel)</SelectItem>
+                               <SelectItem value="16:9">16:9 (Landscape)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="videoDuration" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>مدة الفيديو (ثوانٍ)</FormLabel>
+                            <FormControl><Input type="number" {...field} /></FormControl>
+                        </FormItem>
+                    )} />
+                     <FormField control={form.control} name="exportPreset" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>إعداد التصدير</FormLabel>
+                         <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="اختر الإعداد..." /></SelectTrigger></FormControl>
+                            <SelectContent>
+                               <SelectItem value="1080p">1080p</SelectItem>
+                               <SelectItem value="4k">4K</SelectItem>
+                               <SelectItem value="h264">H.264</SelectItem>
+                            </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="subtitles" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <FormLabel>الترجمة/Subtitles</FormLabel>
+                            <FormControl>
+                                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                        </FormItem>
+                    )} />
+                  </div>
+                </div>
+
                  {/* Workflow Section */}
                 <div className="space-y-4 p-4 border rounded-lg">
-                  <h3 className="font-semibold text-lg">3. سير العمل والتسليمات</h3>
+                  <h3 className="font-semibold text-lg">4. سير العمل والتسليمات</h3>
                    <FormField control={form.control} name="approvalStatus" render={({ field }) => (
                       <FormItem>
                         <FormLabel>حالة الموافقة</FormLabel>
