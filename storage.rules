@@ -2,22 +2,23 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow read access to all files for any authenticated user.
-    // This is a common pattern for public files or files accessible by all users.
+    
+    // القاعدة العامة: السماح للمستخدمين المصادق عليهم بقراءة جميع الملفات
+    // هذا مفيد لعرض الصور والملفات التي تم رفعها في التطبيق
     match /{allPaths=**} {
       allow read: if request.auth != null;
     }
 
-    // Allow authenticated users to write to their own client folders.
-    // This rule allows uploads to paths like:
-    // - /clients/{clientId}/payments/{fileName}
-    // - /{clientId}/{fileName} (for market research)
-    match /clients/{clientId}/{allPaths=**} {
-        allow write: if request.auth != null;
+    // قاعدة لرفع ملفات أبحاث السوق مباشرة تحت ID العميل
+    // {clientId}/{fileName}
+    match /{clientId}/{fileName} {
+       allow write: if request.auth != null;
     }
 
-    match /{clientId}/{fileName} {
-        allow write: if request.auth != null;
+    // قاعدة لرفع ملفات إثباتات الدفع داخل مجلد payments
+    // clients/{clientId}/payments/{fileName}
+    match /clients/{clientId}/payments/{fileName} {
+      allow write: if request.auth != null;
     }
   }
 }
