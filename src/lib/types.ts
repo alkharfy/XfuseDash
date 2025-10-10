@@ -87,10 +87,71 @@ export interface MarketResearchFile {
 }
 
 export interface CalendarEntry {
+  id: string;
   date: any; // Firestore Timestamp
-  idea: string;
-  status: string;
+  
+  // Planning
+  platform?: 'facebook' | 'instagram' | 'tiktok' | 'youtube' | 'linkedin' | 'x' | 'stories' | 'reels' | 'shorts';
+  format?: 'image' | 'carousel' | 'reels' | 'video' | 'story' | 'text' | 'link' | 'live';
+  postGoal?: 'awareness' | 'engagement' | 'traffic' | 'leads' | 'sales' | 'retention';
+  contentPillar?: 'educational' | 'awareness' | 'entertainment' | 'offer' | 'social_proof' | 'behind_scenes' | 'brand_values';
+  campaign?: string;
+  targetAudience?: string[];
+  language?: 'ar' | 'en' | 'ar_en';
+
+  // Creative & Copy
+  title?: string;
+  caption?: string;
+  cta?: 'whatsapp' | 'book_now' | 'shop_now' | 'learn_more' | 'subscribe';
+  hashtags?: string;
+  designNotes?: string;
+  references?: string;
+  brandAssets?: string[];
+  music?: string;
+  script?: string;
+
+  // Technical Specs
+  dimensions?: '1:1' | '4:5' | '9:16' | '16:9';
+  videoDuration?: number;
+  exportPreset?: string;
+  subtitles?: boolean;
+
+  // Workflow
+  designer?: string; // User ID
+  writer?: string; // User ID
+  versions?: { url: string; name: string }[];
+  revisionRounds?: number;
+  approvalStatus?: 'draft' | 'review' | 'with_client' | 'approved' | 'rejected';
+  reviewer?: string; // User ID
+  reviewDate?: any; // Firestore Timestamp
+  reviewNotes?: string;
+  
+  // Publishing
+  publishMethod?: 'manual' | 'scheduled' | 'tool';
+  schedulingTool?: 'meta' | 'hootsuite' | 'buffer' | 'native';
+  postUrl?: string;
+  isBoosted?: boolean;
+  boostBudget?: number;
+  utm?: string;
+
+  // Performance
+  reach?: number;
+  impressions?: number;
+  likes?: number;
+  comments?: number;
+  shares?: number;
+  saves?: number;
+  ctr?: number;
+  cpc?: number;
+  cpl?: number;
+  roas?: number;
+  performanceNotes?: string;
+
+  // Original simple fields (can be deprecated or mapped to new fields)
+  idea?: string; // Mapped to title
+  status?: string; // Mapped to approvalStatus
 }
+
 
 export interface ContentTask {
   title: string;
