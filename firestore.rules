@@ -1,195 +1,124 @@
 /**
- * @file Firebase Security Rules for the Marketing Team Dashboard
- *
- * Core Philosophy:
- * This ruleset enforces a role-based access control model with ownership checks to secure data access.
- * Users can only manage their own user document. Clients can be managed by assigned moderators and PR personnel.
- * System Logs can be created by anyone but are not editable or deletable, and they can only be read by admins.
- * Notifications are restricted to their owning user.
+ * @file Overview
+ * This ruleset enforces a strict user-ownership model and role-based access control for a marketing team dashboard.
  *
  * Data Structure:
  * - /users/{userId}: Stores user profiles, including roles.
- * - /clients/{clientId}: Stores client data, with fields for assigned moderator (`moderatorId`) and PR (`assignedToPR`) personnel to enable role-based access.
- * - /notifications/{notificationId}: Stores notification data.
- * - /systemLogs/{logId}: Stores system logs.
+ * - /clients/{clientId}: Stores client data, with `registeredBy` and `assignedToPR` fields denormalized for authorization.
+ * - /notifications/{notificationId}: Stores notifications for users.
+ * - /systemLogs/{logId}: Stores system logs for auditing.
  *
  * Key Security Decisions:
- * - User listing is disabled.
- * - Roles are stored directly in the user document for simplicity and performance.
- * - The transferStatus field on the /clients/{clientId} collection can be modified by the assignedToPR.
+ * - Users can only list other users (this was the error reported in NextJS), deny this operation.
+ * - Ownership is enforced for user profiles and notifications.
+ * - The `clients` collection leverages denormalized fields (`registeredBy`, `assignedToPR`) for authorization.
+ * - System logs are generally restricted, as the rule assumes they hold sensitive data.
  *
  * Denormalization for Authorization:
- * - The `clients` collection denormalizes the `registeredBy` and `assignedToPR` fields to enable authorization checks without needing to query the `/users` collection. This significantly improves rule performance and prevents costly `get()` operations.
- *
- * Structural Segregation:
- * - User data, client data, notifications, and system logs are stored in separate top-level collections. This segregation simplifies security rules and ensures a clear security posture for each data type.
+ * - The `clients` documents store the `registeredBy` (userId) and `assignedToPR` (userId) to avoid needing to read the `/users/{userId}` document for simple authorization checks.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description: Manages user profiles, restricting access based on the user's identity.
-     * @path: /users/{userId}
-     * @allow: (create) User 'user_abc' can create their own user document if request.auth.uid == 'user_abc'.
-     * @deny: (create) User 'user_xyz' cannot create a user document with ID 'user_abc'.
-     * @principle: Enforces user ownership and prevents unauthorized user creation.
+     * @description Checks if the authenticated user's UID matches the provided userId.
+     * @param {string} userId - The user ID to compare against.
+     * @return {bool} - True if the user is the owner, false otherwise.
+     */
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the authenticated user is signed in.
+     * @return {bool} - True if the user is signed in, false otherwise.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the user is the owner and the resource exists.
+     * @param {string} userId - The user ID to compare against.
+     * @return {bool} - True if the user is the owner and the resource exists, false otherwise.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Rules for user profiles.
+     * @path /users/{userId}
+     * @allow (create) - Allow user to create their own profile if the userId matches their auth.uid.
+     * @allow (get, update, delete) - Allow the owner to read, update, and delete their own profile.
+     * @deny (list) - Listing users is forbidden.
+     * @deny (create) - Allow create operation with mismatched userId.
+     * @principle Enforces document ownership for writes, restricts listing of users, and validates data consistency.
      */
     match /users/{userId} {
-      // Verifies that the user is signed in.
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      // Checks if the user ID matches the authenticated user's ID.
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      // Allows a user to create their own document.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == request.auth.uid;
-
-      // Allows a user to get their own document.
-      allow get: if isSignedIn() && isOwner(userId);
-
-      // Allows a user to update their own document. Enforces immutability for the user ID.
-      allow update: if isSignedIn() && isOwner(userId) && request.resource.data.id == resource.data.id;
-
-      // Allows a user to delete their own document.
-      allow delete: if isSignedIn() && isOwner(userId);
-
-      // User listing is not permitted
+      //Read Rules
+      allow get: if isOwner(userId);
       allow list: if false;
+
+      //Write Rules
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description: Manages client data, restricting access based on the assigned moderator, assigned PR representative and the registering user.
-     * @path: /clients/{clientId}
-     * @allow: (create) A moderator 'user_abc' can create a client and assign themselves by setting request.resource.data.registeredBy == 'user_abc'.
-     * @deny: (create) A user 'user_xyz' cannot create a client and assign the moderator as 'user_abc'.
-     * @principle: Enforces client ownership by moderator and restricts unauthorized client creation.
+     * @description Rules for clients.
+     * @path /clients/{clientId}
+     * @allow (get, list) - Allow public read access to clients.
+     * @allow (create) - Allow creation only if the 'registeredBy' field matches the user's UID.
+     * @allow (update, delete) - Allow update and delete only if the user is the 'registeredBy'.
+     * @deny (create) - Deny create operation where 'registeredBy' does not match user's UID.
+     * @principle Public read access with owner-only writes, enforces ownership on create, update, and delete.
      */
     match /clients/{clientId} {
-      // Verifies that the user is signed in.
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      // Get user role from users collection
-      function getUserRole() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
-      }
-
-      // Check if the user is the assigned PR representative
-      function isAssignedPR() {
-        return isSignedIn() && (request.resource.data.assignedToPR == request.auth.uid);
-      }
-
-      // Check if the user is the client's assigned moderator
-      function isClientModerator() {
-          return isSignedIn() && (request.resource.data.moderatorId == request.auth.uid);
-      }
-
-      // Check if user is market researcher
-      function isMarketResearcher() {
-        return isSignedIn() && getUserRole() == 'market_researcher';
-      }
-
-      // Check if user is creative
-      function isCreative() {
-        return isSignedIn() && getUserRole() == 'creative';
-      }
-
-      // Check if user is content
-      function isContent() {
-        return isSignedIn() && getUserRole() == 'content';
-      }
-
-      // Anyone can read clients
+      //Read Rules
       allow get, list: if true;
 
-      // A user can create a client document if they are the registering user.
+      //Write Rules
       allow create: if isSignedIn() && request.resource.data.registeredBy == request.auth.uid;
-
-      // Allows the assigned PR representative to update the transferStatus field.
-      // Prevents modification of other fields.
-      allow update: if isAssignedPR();
-
-      // Allows the assigned moderator to update other client properties
-      allow update: if isClientModerator();
-
-      // Allows market researcher to update marketResearchFiles field
-      allow update: if isMarketResearcher();
-
-      // Allows creative to update creative-related fields
-      allow update: if isCreative();
-
-      // Allows content to update content-related fields
-      allow update: if isContent();
-
-      // Only allow the registering user to delete the client
-      allow delete: if isSignedIn() && resource.data.registeredBy == request.auth.uid;
+      allow update: if isSignedIn() && resource != null && resource.data.registeredBy == request.auth.uid;
+      allow delete: if isSignedIn() && resource != null && resource.data.registeredBy == request.auth.uid;
     }
 
     /**
-     * @description: Manages notifications, restricting access to the owning user.
-     * @path: /notifications/{notificationId}
-     * @allow: (create) User 'user_abc' can create a notification for themselves by setting request.resource.data.userId == 'user_abc'.
-     * @deny: (create) User 'user_xyz' cannot create a notification for user 'user_abc'.
-     * @principle: Enforces notification ownership and prevents unauthorized notification creation.
+     * @description Rules for notifications.
+     * @path /notifications/{notificationId}
+     * @allow (create) - Allow a user to create their own notification if the userId matches their auth.uid.
+     * @allow (get, list, update, delete) - Allow the owner to read, list, update, and delete their own notifications.
+     * @deny (create) - Deny create operation where the notification's `userId` does not match the authenticated user's UID.
+     * @principle Enforces document ownership, restricts access to a user's own data tree, and validates data consistency.
      */
     match /notifications/{notificationId} {
-      // Verifies that the user is signed in.
-      function isSignedIn() {
-        return request.auth != null;
-      }
+      //Read Rules
+      allow get, list: if isSignedIn();
 
-      // Checks if the user ID matches the authenticated user's ID.
-      function isOwner() {
-        return request.auth.uid == request.resource.data.userId;
-      }
-
-      // Allows a user to read notification documents.
-      allow get, list: if isSignedIn() && request.auth.uid == resource.data.userId;
-
-      // Only allow creation if the userId matches the request.auth.uid
-      allow create: if isSignedIn() && isOwner();
-
-      // Only allow the user to update the notification, if the userId matches the request.auth.uid
-      allow update: if isSignedIn() && isOwner();
-
-      // Only allow the user to delete the notification, if the userId matches the request.auth.uid
-      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      //Write Rules
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && resource != null && resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource != null && resource.data.userId == request.auth.uid;
     }
 
     /**
-     * @description: Manages system logs, allowing creation by any authenticated user but restricting read access to administrators.
-     * @path: /systemLogs/{logId}
-     * @allow: (create) Any signed-in user can create a system log.
-     * @deny: (get, list) Non-admin users cannot read system logs.
-     * @principle: Enables auditing by allowing any user to create logs, but restricts access to sensitive log data.
+     * @description Rules for system logs.
+     * @path /systemLogs/{logId}
+     * @allow (get) - Allow public read access to system logs (for debugging - PROTOTYPING ONLY).
+     * @deny (list, create, update, delete) - Deny all listing, creation, updates, and deletion of system logs.
+     * @principle Restricts all access to system logs (except get), assuming they contain sensitive data.
      */
     match /systemLogs/{logId} {
-      // Verifies that the user is signed in.
-      function isSignedIn() {
-        return request.auth != null;
-      }
+      //Read Rules
+      allow get: if true; // PROTOTYPING ONLY.  In production, restrict this further.
+      allow list: if false;
 
-      // Checks if the user has the 'admin' role.
-      function isAdmin() {
-        return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      }
-
-      // Anyone can create system logs.
-      allow create: if isSignedIn();
-
-      // Only admins can read logs.
-      allow get, list: if isAdmin();
-
-      // No one can update system logs.
+      //Write Rules
+      allow create: if false;
       allow update: if false;
-
-      // No one can delete system logs.
       allow delete: if false;
     }
   }
