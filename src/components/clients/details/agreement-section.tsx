@@ -89,7 +89,7 @@ export function AgreementSection({ client }: { client: Client }) {
                             <AccordionTrigger>2. نطاق العمل (Scope)</AccordionTrigger>
                             <AccordionContent className="space-y-3">
                                 <DetailItem label="اسم الباقة/الخطة" value={scopeOfWork.packageOrPlanName} />
-                                <DetailItem label="الخدمات الدقيقة" value={scopeOf_Work.detailedServices} />
+                                <DetailItem label="الخدمات الدقيقة" value={scopeOfWork.detailedServices} />
                                 <DetailItem label="نقاط التميز (USP)" value={scopeOfWork.usp} />
                                 <DetailItem label="الخطوط الحمراء (Brand Safety)" value={scopeOfWork.brandSafety} />
                                 {scopeOfWork.platforms && <p><strong>المنصات:</strong> {scopeOfWork.platforms.join(', ')}</p>}
