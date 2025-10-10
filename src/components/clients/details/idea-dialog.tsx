@@ -8,8 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useFirestore, updateDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase";
-import { arrayUnion, doc, collection, query, where } from "firebase/firestore";
+import { useFirestore, updateDocumentNonBlocking } from "@/firebase";
+import { arrayUnion, doc } from "firebase/firestore";
 import type { Client, CalendarEntry, User } from "@/lib/types";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,6 +17,8 @@ import { Input } from "@/components/ui/input";
 import { v4 as uuidv4 } from 'uuid';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAuthStore } from "@/hooks/use-auth";
+import { UserSelector } from "./user-selector";
 
 const ideaSchema = z.object({
   // Planning
@@ -41,7 +43,7 @@ const ideaSchema = z.object({
   // Technical Specs
   dimensions: z.enum(['1:1', '4:5', '9:16', '16:9']).optional(),
   videoDuration: z.coerce.number().optional(),
-exportPreset: z.string().optional(),
+  exportPreset: z.string().optional(),
   subtitles: z.boolean().optional(),
 
   // Workflow
@@ -102,14 +104,8 @@ const ctaOptions = [
 export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: IdeaDialogProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { role } = useAuthStore();
   
-  const usersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, "users"), where("role", "in", ["creative", "content"]));
-  }, [firestore]);
-
-  const { data: creativeUsers } = useCollection<User>(usersQuery);
-
   const isCustomCta = ctaOptions.find(opt => opt.value === idea?.cta) === undefined && !!idea?.cta;
 
   const form = useForm<z.infer<typeof ideaSchema>>({
@@ -536,30 +532,40 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
                  {/* Workflow Section */}
                 <div className="space-y-4 p-4 border rounded-lg">
                   <h3 className="font-semibold text-lg">4. سير العمل والتسليمات</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="writer" render={({ field }) => (
-                        <FormItem>
+                  { (role === 'admin' || role === 'moderator' || role === 'creative') &&
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="writer"
+                        render={({ field }) => (
+                          <FormItem>
                             <FormLabel>المسؤول عن الكتابة</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="اختر الكاتب..." /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                    {creativeUsers?.map(user => <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </FormItem>
-                    )} />
-                    <FormField control={form.control} name="designer" render={({ field }) => (
-                        <FormItem>
+                            <UserSelector
+                              selectedUser={field.value}
+                              onSelectUser={field.onChange}
+                              roles={['content', 'creative']}
+                            />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="designer"
+                        render={({ field }) => (
+                          <FormItem>
                             <FormLabel>المسؤول عن التصميم</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl><SelectTrigger><SelectValue placeholder="اختر المصمم..." /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                    {creativeUsers?.map(user => <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </FormItem>
-                    )} />
-                   </div>
+                             <UserSelector
+                              selectedUser={field.value}
+                              onSelectUser={field.onChange}
+                              roles={['creative']}
+                            />
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  }
                    <FormField control={form.control} name="approvalStatus" render={({ field }) => (
                       <FormItem>
                         <FormLabel>حالة الموافقة</FormLabel>
