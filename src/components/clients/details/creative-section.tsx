@@ -7,6 +7,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { AddIdeaDialog } from "./add-idea-dialog";
 
 export function CreativeSection({ client }: { client: Client }) {
     const [date, setDate] = useState<Date | undefined>(new Date());
@@ -51,7 +52,9 @@ export function CreativeSection({ client }: { client: Client }) {
                             )}
                         </div>
                     </div>
-                    <Button>إضافة فكرة جديدة</Button>
+                     <AddIdeaDialog client={client} selectedDate={date}>
+                        <Button>إضافة فكرة جديدة</Button>
+                    </AddIdeaDialog>
                 </div>
             </CardContent>
         </Card>

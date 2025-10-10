@@ -75,14 +75,34 @@ service cloud.firestore {
         return request.auth != null;
       }
 
+      // Get user role from users collection
+      function getUserRole() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      }
+
       // Check if the user is the assigned PR representative
       function isAssignedPR() {
         return isSignedIn() && (request.resource.data.assignedToPR == request.auth.uid);
       }
-      
+
       // Check if the user is the client's assigned moderator
       function isClientModerator() {
           return isSignedIn() && (request.resource.data.moderatorId == request.auth.uid);
+      }
+
+      // Check if user is market researcher
+      function isMarketResearcher() {
+        return isSignedIn() && getUserRole() == 'market_researcher';
+      }
+
+      // Check if user is creative
+      function isCreative() {
+        return isSignedIn() && getUserRole() == 'creative';
+      }
+
+      // Check if user is content
+      function isContent() {
+        return isSignedIn() && getUserRole() == 'content';
       }
 
       // Anyone can read clients
@@ -98,6 +118,14 @@ service cloud.firestore {
       // Allows the assigned moderator to update other client properties
       allow update: if isClientModerator();
 
+      // Allows market researcher to update marketResearchFiles field
+      allow update: if isMarketResearcher();
+
+      // Allows creative to update creative-related fields
+      allow update: if isCreative();
+
+      // Allows content to update content-related fields
+      allow update: if isContent();
 
       // Only allow the registering user to delete the client
       allow delete: if isSignedIn() && resource.data.registeredBy == request.auth.uid;
