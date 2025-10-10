@@ -46,6 +46,14 @@ const ideaSchema = z.object({
 
   // Workflow
   approvalStatus: z.enum(['draft', 'review', 'with_client', 'approved', 'rejected']).optional(),
+
+  // Publishing
+  publishMethod: z.enum(['manual', 'scheduled', 'tool']).optional(),
+  schedulingTool: z.enum(['meta', 'hootsuite', 'buffer', 'native']).optional(),
+  postUrl: z.string().url({ message: "الرجاء إدخال رابط صحيح." }).optional().or(z.literal('')),
+  isBoosted: z.boolean().optional(),
+  boostBudget: z.coerce.number().optional(),
+  utm: z.string().optional(),
 });
 
 interface IdeaDialogProps {
@@ -102,10 +110,16 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
         references: idea.references || "",
         brandAssets: idea.brandAssets || [],
         dimensions: idea.dimensions,
-        videoDuration: idea.videoDuration || 0,
+        videoDuration: idea.videoDuration || undefined,
         exportPreset: idea.exportPreset || "",
         subtitles: idea.subtitles || false,
-        approvalStatus: idea.approvalStatus || (idea.status ? 'draft' : undefined)
+        approvalStatus: idea.approvalStatus || (idea.status ? 'draft' : undefined),
+        publishMethod: idea.publishMethod,
+        schedulingTool: idea.schedulingTool,
+        postUrl: idea.postUrl || "",
+        isBoosted: idea.isBoosted || false,
+        boostBudget: idea.boostBudget || undefined,
+        utm: idea.utm || "",
     } 
     : {
       title: "",
@@ -124,14 +138,22 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
       references: "",
       brandAssets: [],
       dimensions: undefined,
-      videoDuration: 0,
+      videoDuration: undefined,
       exportPreset: "",
       subtitles: false,
       approvalStatus: 'draft',
+      publishMethod: undefined,
+      schedulingTool: undefined,
+      postUrl: "",
+      isBoosted: false,
+      boostBudget: undefined,
+      utm: "",
     },
   });
 
   const watchCta = useWatch({ control: form.control, name: 'cta' });
+  const watchIsBoosted = useWatch({ control: form.control, name: 'isBoosted' });
+
 
   const onSubmit = (values: z.infer<typeof ideaSchema>) => {
     if (!firestore || !selectedDate) {
@@ -476,6 +498,72 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
                     )}
                   />
                 </div>
+
+                 {/* Publishing & Promotion Section */}
+                <div className="space-y-4 p-4 border rounded-lg">
+                  <h3 className="font-semibold text-lg">5. النشر والترويج</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <FormField control={form.control} name="publishMethod" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>طريقة النشر</FormLabel>
+                         <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="اختر الطريقة..." /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="manual">يدوي (Manual)</SelectItem>
+                            <SelectItem value="scheduled">جدولة (Scheduled)</SelectItem>
+                            <SelectItem value="tool">عبر أداة (Tool)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )} />
+                     <FormField control={form.control} name="schedulingTool" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>أداة الجدولة</FormLabel>
+                         <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="اختر الأداة..." /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value="meta">Meta Planner</SelectItem>
+                            <SelectItem value="hootsuite">Hootsuite</SelectItem>
+                            <SelectItem value="buffer">Buffer</SelectItem>
+                            <SelectItem value="native">داخل المنصة</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )} />
+                  </div>
+                  <FormField control={form.control} name="postUrl" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>رابط المنشور بعد النشر</FormLabel>
+                        <FormControl><Input {...field} placeholder="https://..."/></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                    <FormField control={form.control} name="isBoosted" render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                            <FormLabel>Boost/Ads</FormLabel>
+                            <FormControl>
+                                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                        </FormItem>
+                    )} />
+                     {watchIsBoosted && (
+                         <FormField control={form.control} name="boostBudget" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>ميزانية الترويج</FormLabel>
+                                <FormControl><Input type="number" {...field} placeholder="0.00" /></FormControl>
+                            </FormItem>
+                         )} />
+                     )}
+                  </div>
+                   <FormField control={form.control} name="utm" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>UTM Parameters</FormLabel>
+                            <FormControl><Input {...field} placeholder="utm_source=..."/></FormControl>
+                        </FormItem>
+                    )} />
+                </div>
+
 
               </div>
             </ScrollArea>

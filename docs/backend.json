@@ -237,7 +237,13 @@
               "revisionRounds": { "type": "number" },
               "reviewer": { "type": "string" },
               "reviewDate": { "type": "string", "format": "date-time" },
-              "reviewNotes": { "type": "string" }
+              "reviewNotes": { "type": "string" },
+              "publishMethod": { "type": "string" },
+              "schedulingTool": { "type": "string" },
+              "postUrl": { "type": "string" },
+              "isBoosted": { "type": "boolean" },
+              "boostBudget": { "type": "number" },
+              "utm": { "type": "string" }
             }
           }
         },
