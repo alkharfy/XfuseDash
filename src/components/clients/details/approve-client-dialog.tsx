@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { ChangeEvent, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,7 +25,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { useFirestore, updateDocumentNonBlocking } from "@/firebase";
+import { useFirestore, updateDocumentNonBlocking, useFirebaseApp } from "@/firebase";
 import { useAuthStore } from "@/hooks/use-auth";
 import { doc, serverTimestamp } from "firebase/firestore";
 import { Textarea } from "../../ui/textarea";
@@ -40,10 +40,12 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, File, Loader2, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, UploadTask } from 'firebase/storage';
+import { Progress } from "@/components/ui/progress";
 
 
 const services = [
@@ -108,7 +110,7 @@ const approveClientSchema = z.object({
   // Final Agreement
   agreedPrice: z.coerce.number().min(0, "السعر يجب أن يكون رقمًا موجبًا.").optional(),
   firstPayment: z.coerce.number().min(0, "الدفعة الأولى يجب أن تكون رقمًا موجبًا.").optional(),
-  paymentScreenshotUrl: z.string().optional(),
+  paymentScreenshots: z.array(z.object({ name: z.string(), url: z.string() })).optional(),
   requiredExecution: z.string().optional(),
   duration: z.coerce.number().int().min(1, "المدة يجب أن تكون شهرًا واحدًا على الأقل.").optional(),
   serviceRequests: z.object({
@@ -156,6 +158,12 @@ const approveClientSchema = z.object({
 
 });
 
+interface UploadingFile {
+    id: string;
+    name: string;
+    progress: number;
+}
+
 export function ApproveClientDialog({
   children,
   client,
@@ -165,15 +173,19 @@ export function ApproveClientDialog({
 }) {
   const { user } = useAuthStore();
   const firestore = useFirestore();
+  const firebaseApp = useFirebaseApp();
+  const storage = getStorage(firebaseApp);
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
+  const [uploadingFiles, setUploadingFiles] = useState<UploadingFile[]>([]);
+  const [uploadedScreenshots, setUploadedScreenshots] = useState<{name: string, url: string}[]>(client.finalAgreement?.paymentScreenshots || []);
 
   const form = useForm<z.infer<typeof approveClientSchema>>({
     resolver: zodResolver(approveClientSchema),
     defaultValues: {
       agreedPrice: client.finalAgreement?.agreedPrice || 0,
       firstPayment: client.finalAgreement?.firstPayment || 0,
-      paymentScreenshotUrl: client.finalAgreement?.paymentScreenshotUrl || "",
+      paymentScreenshots: client.finalAgreement?.paymentScreenshots || [],
       requiredExecution: client.finalAgreement?.requiredExecution || "",
       duration: client.finalAgreement?.duration || 1,
       serviceRequests: client.serviceRequests || { marketResearch: false, content: false, creative: false, aiVideo: false, ads: false },
@@ -181,17 +193,17 @@ export function ApproveClientDialog({
       paymentPlan: client.finalAgreement?.paymentPlan || "",
       paymentMethod: client.finalAgreement?.paymentMethod || "",
 
-      preferredContactMethod: client.operationalData?.preferredContactMethod,
-      bestContactTime: client.operationalData?.bestContactTime,
+      preferredContactMethod: client.operationalData?.preferredContactMethod || undefined,
+      bestContactTime: client.operationalData?.bestContactTime || undefined,
       clientTimezone: client.operationalData?.clientTimezone || "",
       alternativeContactName: client.operationalData?.alternativeContactName || "",
       alternativeContactNumber: client.operationalData?.alternativeContactNumber || "",
       
-      leadSource: client.leadInfo?.source,
+      leadSource: client.leadInfo?.source || undefined,
       campaignName: client.leadInfo?.campaignName || "",
       firstContactDate: client.leadInfo?.firstContactDate ? new Date(client.leadInfo.firstContactDate.seconds * 1000) : undefined,
       lastContactDate: client.leadInfo?.lastContactDate ? new Date(client.leadInfo.lastContactDate.seconds * 1000) : undefined,
-      pipelineStage: client.leadInfo?.pipelineStage,
+      pipelineStage: client.leadInfo?.pipelineStage || undefined,
       lostReason: client.leadInfo?.lostReason || "",
 
       packageOrPlanName: client.scopeOfWork?.packageOrPlanName || "",
@@ -204,12 +216,49 @@ export function ApproveClientDialog({
       usp: client.scopeOfWork?.usp || "",
       brandSafety: client.scopeOfWork?.brandSafety || "",
       
-      mainGoal: client.kpis?.mainGoal,
+      mainGoal: client.kpis?.mainGoal || undefined,
       monthlyTargets: client.kpis?.monthlyTargets || "",
       aov: client.kpis?.aov || 0,
       goalTimeline: client.kpis?.goalTimeline || "",
     },
   });
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !user) return;
+
+    for (const file of Array.from(files)) {
+        const id = Date.now().toString() + Math.random().toString();
+        const newUploadingFile = { id, name: file.name, progress: 0 };
+        setUploadingFiles(prev => [...prev, newUploadingFile]);
+        
+        const filePath = `clients/${client.id}/payments/${Date.now()}_${file.name}`;
+        const storageRef = ref(storage, filePath);
+        const uploadTask = uploadBytesResumable(storageRef, file);
+
+        uploadTask.on(
+            'state_changed',
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                setUploadingFiles(prev => prev.map(f => f.id === id ? { ...f, progress } : f));
+            },
+            (error) => {
+                console.error("Upload failed:", error);
+                toast({ variant: "destructive", title: `فشل رفع ${file.name}`, description: error.message });
+                setUploadingFiles(prev => prev.filter(f => f.id !== id));
+            },
+            async () => {
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                setUploadedScreenshots(prev => [...prev, { name: file.name, url: downloadURL }]);
+                setUploadingFiles(prev => prev.filter(f => f.id !== id));
+                toast({ title: "نجاح", description: `تم رفع ${file.name} بنجاح.` });
+            }
+        );
+    }
+    // Reset file input
+    e.target.value = '';
+  };
+
 
   const onSubmit = (values: z.infer<typeof approveClientSchema>) => {
     if (!firestore || !user) return;
@@ -226,7 +275,7 @@ export function ApproveClientDialog({
             startDate: serverTimestamp(),
             agreedPrice: values.agreedPrice,
             firstPayment: values.firstPayment,
-            paymentScreenshotUrl: values.paymentScreenshotUrl,
+            paymentScreenshots: uploadedScreenshots,
             requiredExecution: values.requiredExecution,
             duration: values.duration,
             agreementDetails: values.requiredExecution || '',
@@ -730,6 +779,40 @@ export function ApproveClientDialog({
                         </FormItem>
                         )} />
 
+                    <div className="space-y-4">
+                        <div className="p-4 border-2 border-dashed rounded-lg text-center space-y-2">
+                            <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
+                            <FormLabel htmlFor="payment-screenshot">إسكرين الدفع</FormLabel>
+                            <p className="text-sm text-muted-foreground">ارفع صور إثبات الدفع</p>
+                            <Input id="payment-screenshot" type="file" className="hidden" onChange={handleFileChange} multiple />
+                            <Button asChild variant="outline" size="sm">
+                                <label htmlFor="payment-screenshot">تصفح الملفات</label>
+                            </Button>
+                        </div>
+                        {uploadingFiles.map(file => (
+                            <div key={file.id} className="space-y-1">
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="truncate max-w-[200px]">{file.name}</span>
+                                    <span className="text-muted-foreground">{Math.round(file.progress)}%</span>
+                                </div>
+                                <Progress value={file.progress} />
+                            </div>
+                        ))}
+                         {uploadedScreenshots.length > 0 && (
+                            <div className="space-y-2">
+                                <h5 className="text-sm font-medium">الملفات المرفوعة:</h5>
+                                {uploadedScreenshots.map((file, index) => (
+                                    <div key={index} className="flex items-center justify-between p-2 rounded-md border text-sm">
+                                        <a href={file.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-600 hover:underline">
+                                            <File className="h-4 w-4" />
+                                            {file.name}
+                                        </a>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
                     <div className="space-y-2 pt-4">
                         <FormLabel>الخدمات المطلوبة</FormLabel>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 rounded-lg border p-4">
@@ -746,12 +829,6 @@ export function ApproveClientDialog({
                                 />
                             ))}
                         </div>
-                    </div>
-
-                    <div className="p-4 border-2 border-dashed rounded-lg text-center space-y-2">
-                        <FormLabel htmlFor="payment-screenshot">إسكرين الدفع</FormLabel>
-                        <p className="text-sm text-muted-foreground">ارفع صورة إثبات الدفعة الأولى</p>
-                        <Input id="payment-screenshot" type="file" className="mx-auto" />
                     </div>
 
                     <FormField control={form.control} name="requiredExecution" render={({ field }) => (

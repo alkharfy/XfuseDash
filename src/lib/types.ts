@@ -173,7 +173,7 @@ export interface FinalAgreement {
   approvedAt: any; // Firestore Timestamp
   agreedPrice?: number;
   firstPayment?: number;
-  paymentScreenshotUrl?: string;
+  paymentScreenshots?: { name: string; url: string; }[];
   requiredExecution?: string;
   currency?: string;
   paymentPlan?: string;

@@ -121,7 +121,8 @@
             "approved": { "type": "boolean" }, "agreementDetails": { "type": "string" }, "duration": { "type": "number" },
             "startDate": { "type": "string", "format": "date-time" }, "approvedBy": { "type": "string" },
             "approvedAt": { "type": "string", "format": "date-time" }, "agreedPrice": { "type": "number" },
-            "firstPayment": { "type": "number" }, "paymentScreenshotUrl": { "type": "string" },
+            "firstPayment": { "type": "number" },
+            "paymentScreenshots": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "url": { "type": "string" } } } },
             "requiredExecution": { "type": "string" }, "currency": { "type": "string" }, "paymentPlan": { "type": "string" },
             "paymentMethod": { "type": "string" }, "nextPaymentDate": { "type": "string", "format": "date-time" },
             "serviceTerminationPolicy": { "type": "string" }
