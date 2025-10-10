@@ -206,22 +206,31 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
     let newCalendar: CalendarEntry[];
     
     const finalCta = values.cta === 'custom' ? values.customCta : values.cta;
-    const dataToSave = { ...values, cta: finalCta };
+    
+    // Create a clean data object to save, excluding any undefined values.
+    const dataToSave: Partial<CalendarEntry> = { ...values, cta: finalCta };
     delete (dataToSave as any).customCta;
+
+    Object.keys(dataToSave).forEach(key => {
+        if (dataToSave[key as keyof typeof dataToSave] === undefined) {
+            delete dataToSave[key as keyof typeof dataToSave];
+        }
+    });
+
 
     if(idea) { // Editing existing idea
         newCalendar = currentCalendar.map(entry => {
             if(entry.id === idea.id) {
-                return { ...entry, ...dataToSave, title: dataToSave.title };
+                return { ...entry, ...dataToSave, title: dataToSave.title || entry.title };
             }
             return entry;
         });
     } else { // Adding new idea
         const newIdea: CalendarEntry = {
             ...dataToSave,
-            title: dataToSave.title,
             id: uuidv4(),
             date: selectedDate,
+            title: dataToSave.title!, // Title is required, so it will be present
         };
         newCalendar = [...currentCalendar, newIdea];
     }
