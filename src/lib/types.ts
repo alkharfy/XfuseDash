@@ -107,8 +107,6 @@ export interface CalendarEntry {
   designNotes?: string;
   references?: string;
   brandAssets?: string[];
-  music?: string;
-  script?: string;
 
   // Technical Specs
   dimensions?: '1:1' | '4:5' | '9:16' | '16:9';

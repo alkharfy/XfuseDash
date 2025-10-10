@@ -230,7 +230,14 @@
               "dimensions": { "type": "string" },
               "videoDuration": { "type": "number" },
               "exportPreset": { "type": "string" },
-              "subtitles": { "type": "boolean" }
+              "subtitles": { "type": "boolean" },
+              "designer": { "type": "string" },
+              "writer": { "type": "string" },
+              "versions": { "type": "array", "items": { "type": "object", "properties": { "url": { "type": "string" }, "name": { "type": "string" } } } },
+              "revisionRounds": { "type": "number" },
+              "reviewer": { "type": "string" },
+              "reviewDate": { "type": "string", "format": "date-time" },
+              "reviewNotes": { "type": "string" }
             }
           }
         },
