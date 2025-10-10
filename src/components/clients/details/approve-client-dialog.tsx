@@ -177,16 +177,23 @@ export function ApproveClientDialog({
       requiredExecution: client.finalAgreement?.requiredExecution || "",
       duration: client.finalAgreement?.duration || 1,
       serviceRequests: client.serviceRequests || { marketResearch: false, content: false, creative: false, aiVideo: false, ads: false },
-      // Initialize new fields
+      currency: client.finalAgreement?.currency || "",
+      paymentPlan: client.finalAgreement?.paymentPlan || "",
+      paymentMethod: client.finalAgreement?.paymentMethod || "",
+
       preferredContactMethod: client.operationalData?.preferredContactMethod,
       bestContactTime: client.operationalData?.bestContactTime,
       clientTimezone: client.operationalData?.clientTimezone || "",
       alternativeContactName: client.operationalData?.alternativeContactName || "",
       alternativeContactNumber: client.operationalData?.alternativeContactNumber || "",
+      
       leadSource: client.leadInfo?.source,
       campaignName: client.leadInfo?.campaignName || "",
+      firstContactDate: client.leadInfo?.firstContactDate ? new Date(client.leadInfo.firstContactDate.seconds * 1000) : undefined,
+      lastContactDate: client.leadInfo?.lastContactDate ? new Date(client.leadInfo.lastContactDate.seconds * 1000) : undefined,
       pipelineStage: client.leadInfo?.pipelineStage,
       lostReason: client.leadInfo?.lostReason || "",
+
       packageOrPlanName: client.scopeOfWork?.packageOrPlanName || "",
       detailedServices: client.scopeOfWork?.detailedServices || "",
       platforms: client.scopeOfWork?.platforms || [],
@@ -196,6 +203,7 @@ export function ApproveClientDialog({
       photographyDetails: client.scopeOfWork?.photographyDetails || "",
       usp: client.scopeOfWork?.usp || "",
       brandSafety: client.scopeOfWork?.brandSafety || "",
+      
       mainGoal: client.kpis?.mainGoal,
       monthlyTargets: client.kpis?.monthlyTargets || "",
       aov: client.kpis?.aov || 0,
@@ -297,13 +305,12 @@ export function ApproveClientDialog({
                   <AccordionTrigger>1. بيانات العميل التشغيلية</AccordionTrigger>
                   <AccordionContent className="space-y-4">
                      <FormField
-                        control={form.control}
                         name="internalClientId"
-                        render={({ field }) => (
+                        render={() => (
                           <FormItem>
                             <FormLabel>رقم عميل داخلي (Client ID)</FormLabel>
                             <FormControl>
-                              <Input {...field} disabled value={client.id} />
+                              <Input disabled value={client.id} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -316,7 +323,7 @@ export function ApproveClientDialog({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>طريقة التواصل المفضلة</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl>
                                 <SelectContent>
                                     <SelectItem value="whatsapp">واتساب</SelectItem>
@@ -333,7 +340,7 @@ export function ApproveClientDialog({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>أفضل وقت للاتصال</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl><SelectTrigger><SelectValue placeholder="اختر..." /></SelectTrigger></FormControl>
                                 <SelectContent>
                                     <SelectItem value="morning">صباحًا</SelectItem>
@@ -389,7 +396,7 @@ export function ApproveClientDialog({
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>مصدر العميل</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl><SelectTrigger><SelectValue placeholder="اختر المصدر..." /></SelectTrigger></FormControl>
                                     <SelectContent>
                                         {leadSources.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -455,7 +462,7 @@ export function ApproveClientDialog({
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel>المرحلة الحالية في البايبلاين</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl><SelectTrigger><SelectValue placeholder="اختر المرحلة..." /></SelectTrigger></FormControl>
                                 <SelectContent>
                                     {pipelineStages.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
@@ -635,7 +642,7 @@ export function ApproveClientDialog({
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>الهدف الرئيسي</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl><SelectTrigger><SelectValue placeholder="اختر الهدف..." /></SelectTrigger></FormControl>
                                     <SelectContent>
                                         {mainGoals.map(g => <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>)}
