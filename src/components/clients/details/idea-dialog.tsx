@@ -8,9 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useFirestore, updateDocumentNonBlocking } from "@/firebase";
-import { arrayUnion, doc } from "firebase/firestore";
-import type { Client, CalendarEntry } from "@/lib/types";
+import { useFirestore, updateDocumentNonBlocking, useCollection, useMemoFirebase } from "@/firebase";
+import { arrayUnion, doc, collection, query, where } from "firebase/firestore";
+import type { Client, CalendarEntry, User } from "@/lib/types";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,8 @@ exportPreset: z.string().optional(),
   subtitles: z.boolean().optional(),
 
   // Workflow
+  writer: z.string().optional(),
+  designer: z.string().optional(),
   approvalStatus: z.enum(['draft', 'review', 'with_client', 'approved', 'rejected']).optional(),
 
   // Publishing
@@ -101,6 +103,13 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
   const firestore = useFirestore();
   const { toast } = useToast();
   
+  const usersQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, "users"), where("role", "in", ["creative", "content"]));
+  }, [firestore]);
+
+  const { data: creativeUsers } = useCollection<User>(usersQuery);
+
   const isCustomCta = ctaOptions.find(opt => opt.value === idea?.cta) === undefined && !!idea?.cta;
 
   const form = useForm<z.infer<typeof ideaSchema>>({
@@ -126,6 +135,8 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
         videoDuration: idea.videoDuration || undefined,
         exportPreset: idea.exportPreset || "",
         subtitles: idea.subtitles || false,
+        writer: idea.writer,
+        designer: idea.designer,
         approvalStatus: idea.approvalStatus || (idea.status ? 'draft' : undefined),
         publishMethod: idea.publishMethod,
         schedulingTool: idea.schedulingTool,
@@ -165,6 +176,8 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
       videoDuration: undefined,
       exportPreset: "",
       subtitles: false,
+      writer: undefined,
+      designer: undefined,
       approvalStatus: 'draft',
       publishMethod: undefined,
       schedulingTool: undefined,
@@ -207,7 +220,6 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
     
     const finalCta = values.cta === 'custom' ? values.customCta : values.cta;
     
-    // Create a clean data object to save, excluding any undefined values.
     const dataToSave: Partial<CalendarEntry> = { ...values, cta: finalCta };
     delete (dataToSave as any).customCta;
 
@@ -524,6 +536,30 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
                  {/* Workflow Section */}
                 <div className="space-y-4 p-4 border rounded-lg">
                   <h3 className="font-semibold text-lg">4. سير العمل والتسليمات</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="writer" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>المسؤول عن الكتابة</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="اختر الكاتب..." /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    {creativeUsers?.map(user => <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </FormItem>
+                    )} />
+                    <FormField control={form.control} name="designer" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>المسؤول عن التصميم</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="اختر المصمم..." /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    {creativeUsers?.map(user => <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </FormItem>
+                    )} />
+                   </div>
                    <FormField control={form.control} name="approvalStatus" render={({ field }) => (
                       <FormItem>
                         <FormLabel>حالة الموافقة</FormLabel>
