@@ -96,7 +96,7 @@ export interface CalendarEntry {
   postGoal?: 'awareness' | 'engagement' | 'traffic' | 'leads' | 'sales' | 'retention';
   contentPillar?: 'educational' | 'awareness' | 'entertainment' | 'offer' | 'social_proof' | 'behind_scenes' | 'brand_values';
   campaign?: string;
-  targetAudience?: string[];
+  targetAudience?: string;
   language?: 'ar' | 'en' | 'ar_en';
 
   // Creative & Copy

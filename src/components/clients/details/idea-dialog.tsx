@@ -26,12 +26,16 @@ const ideaSchema = z.object({
   postGoal: z.enum(['awareness', 'engagement', 'traffic', 'leads', 'sales', 'retention']).optional(),
   contentPillar: z.enum(['educational', 'awareness', 'entertainment', 'offer', 'social_proof', 'behind_scenes', 'brand_values']).optional(),
   language: z.enum(['ar', 'en', 'ar_en']).optional(),
+  campaign: z.string().optional(),
+  targetAudience: z.string().optional(),
   
   // Creative
   caption: z.string().optional(),
   cta: z.enum(['whatsapp', 'book_now', 'shop_now', 'learn_more', 'subscribe']).optional(),
   hashtags: z.string().optional(),
   designNotes: z.string().optional(),
+  references: z.string().optional(),
+  brandAssets: z.array(z.string()).optional(),
 
   // Workflow
   approvalStatus: z.enum(['draft', 'review', 'with_client', 'approved', 'rejected']).optional(),
@@ -44,6 +48,13 @@ interface IdeaDialogProps {
     selectedDate: Date | undefined;
     idea: CalendarEntry | null;
 }
+
+const availableBrandAssets = [
+    { id: 'logo', label: 'لوجو' },
+    { id: 'identity_guide', label: 'دليل هوية' },
+    { id: 'raw_images', label: 'صور خام' },
+    { id: 'product_library', label: 'مكتبة منتجات' },
+]
 
 export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: IdeaDialogProps) {
   const firestore = useFirestore();
@@ -59,10 +70,14 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
         postGoal: idea.postGoal,
         contentPillar: idea.contentPillar,
         language: idea.language,
+        campaign: idea.campaign || "",
+        targetAudience: idea.targetAudience || "",
         caption: idea.caption || "",
         cta: idea.cta,
         hashtags: idea.hashtags || "",
         designNotes: idea.designNotes || "",
+        references: idea.references || "",
+        brandAssets: idea.brandAssets || [],
         approvalStatus: idea.approvalStatus || (idea.status ? 'draft' : undefined)
     } 
     : {
@@ -72,10 +87,14 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
       postGoal: undefined,
       contentPillar: undefined,
       language: undefined,
+      campaign: "",
+      targetAudience: "",
       caption: "",
       cta: undefined,
       hashtags: "",
       designNotes: "",
+      references: "",
+      brandAssets: [],
       approvalStatus: 'draft',
     },
   });
@@ -235,7 +254,20 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
                         </Select>
                       </FormItem>
                     )} />
+                     <FormField control={form.control} name="campaign" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>الحملة/الكامبين</FormLabel>
+                            <FormControl><Input {...field} placeholder="اسم الحملة التابع لها البوست..."/></FormControl>
+                        </FormItem>
+                        )} 
+                    />
                   </div>
+                   <FormField control={form.control} name="targetAudience" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>الجمهور المستهدف</FormLabel>
+                            <FormControl><Textarea {...field} placeholder="مثال: سيدات 18-24، مهتمون بالجمال..." /></FormControl>
+                        </FormItem>
+                    )} />
                 </div>
 
                 {/* Creative Section */}
@@ -276,6 +308,59 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
                         <FormControl><Textarea {...field} /></FormControl>
                       </FormItem>
                     )} />
+                    <FormField control={form.control} name="references" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>المراجع/الريفرنس (URL)</FormLabel>
+                        <FormControl><Input {...field} placeholder="https://example.com/reference" /></FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField
+                        control={form.control}
+                        name="brandAssets"
+                        render={() => (
+                            <FormItem>
+                            <div className="mb-4">
+                                <FormLabel>الأصول المتاحة</FormLabel>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {availableBrandAssets.map((item) => (
+                                <FormField
+                                key={item.id}
+                                control={form.control}
+                                name="brandAssets"
+                                render={({ field }) => {
+                                    return (
+                                    <FormItem
+                                        key={item.id}
+                                        className="flex flex-row items-start space-x-3 space-y-0 space-x-reverse"
+                                    >
+                                        <FormControl>
+                                        <Checkbox
+                                            checked={field.value?.includes(item.id)}
+                                            onCheckedChange={(checked) => {
+                                            return checked
+                                                ? field.onChange([...(field.value || []), item.id])
+                                                : field.onChange(
+                                                    field.value?.filter(
+                                                    (value) => value !== item.id
+                                                    )
+                                                )
+                                            }}
+                                        />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                        {item.label}
+                                        </FormLabel>
+                                    </FormItem>
+                                    )
+                                }}
+                                />
+                            ))}
+                            </div>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
                 </div>
                 
                  {/* Workflow Section */}
