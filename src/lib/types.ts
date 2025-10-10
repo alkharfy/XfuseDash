@@ -66,8 +66,18 @@ export interface Client {
   contentStatus?: 'pending' | 'in_progress' | 'completed';
   contentTasks?: ContentTask[];
 
-  // Final Agreement
+  // Final Agreement & Onboarding
   finalAgreement?: FinalAgreement;
+  operationalData?: OperationalData;
+  leadInfo?: LeadInfo;
+  scopeOfWork?: ScopeOfWork;
+  kpis?: KeyPerformanceIndicators;
+  accessCredentials?: AccessCredentials;
+  onboardingInfo?: OnboardingInfo;
+  riskManagement?: RiskManagement;
+  qualityAssurance?: QualityAssurance;
+  clientTickets?: ClientTicket[];
+  activityLog?: ActivityLogEntry[];
 }
 
 export interface Appointment {
@@ -100,7 +110,7 @@ export interface CalendarEntry {
   language?: 'ar' | 'en' | 'ar_en';
 
   // Creative & Copy
-  title?: string;
+  title: string;
   caption?: string;
   cta?: string;
   hashtags?: string;
@@ -144,10 +154,6 @@ export interface CalendarEntry {
   cpl?: number;
   roas?: number;
   performanceNotes?: string;
-
-  // Original simple fields (can be deprecated or mapped to new fields)
-  idea?: string; // Mapped to title
-  status?: string; // Mapped to approvalStatus
 }
 
 
@@ -169,14 +175,115 @@ export interface FinalAgreement {
   firstPayment?: number;
   paymentScreenshotUrl?: string;
   requiredExecution?: string;
+  currency?: string;
+  paymentPlan?: string;
+  paymentMethod?: string;
+  nextPaymentDate?: any;
+  serviceTerminationPolicy?: string;
 }
 
-export interface Notification {
+export interface OperationalData {
+  internalClientId?: string;
+  preferredContactMethod?: 'whatsapp' | 'phone' | 'email';
+  bestContactTime?: 'morning' | 'afternoon' | 'evening';
+  clientTimezone?: string;
+  alternativeContactName?: string;
+  alternativeContactNumber?: string;
+}
+
+export interface LeadInfo {
+  source?: 'facebook_ads' | 'instagram_ads' | 'google_ads' | 'tiktok_ads' | 'referral' | 'organic' | 'website' | 'event';
+  campaignName?: string;
+  firstContactDate?: any;
+  lastContactDate?: any;
+  pipelineStage?: 'new' | 'qualified' | 'proposal_sent' | 'negotiation' | 'won' | 'lost' | 'on_hold';
+  lostReason?: string;
+}
+
+export interface ScopeOfWork {
+  packageOrPlanName?: string;
+  detailedServices?: string;
+  platforms?: ('facebook' | 'instagram' | 'tiktok' | 'linkedin' | 'snapchat' | 'google')[];
+  languages?: ('ar' | 'en' | 'ar_en')[];
+  clientMaterials?: string[];
+  photographyNeeded?: boolean;
+  photographyDetails?: string;
+  usp?: string;
+  brandSafety?: string;
+}
+
+export interface KeyPerformanceIndicators {
+  mainGoal?: 'sales' | 'bookings' | 'leads' | 'awareness';
+  monthlyTargets?: string; // e.g., "100 leads, 5% CTR"
+  aov?: number;
+  goalTimeline?: string; // "30-day goal, 90-day goal"
+}
+
+export interface TimelineSLA {
+  executionStartDate?: any;
+  firstDraftDeliveryDate?: any;
+  weeklySchedule?: string;
+  clientResponseSLA?: string; // e.g., "4 hours"
+  clientRevisionSLA?: string; // e.g., "2 days"
+  allowedRevisions?: number;
+}
+
+export interface Stakeholders {
+  moderatorId?: string;
+  prId?: string;
+  designerId?: string;
+  researcherId?: string;
+  accountManagerId?: string;
+  clientApprovers?: { name: string; role: string }[];
+}
+
+export interface AccessCredentials {
+  socialAccounts?: { platform: string; url: string; role: 'admin' | 'editor' | 'advertiser' }[];
+  businessManagerId?: string;
+  pixelId?: string;
+  hostingInfo?: string;
+}
+
+export interface LegalDocuments {
+  logoUsageApproval?: boolean;
+  adLegalApproval?: boolean;
+  contracts?: { name: string; url: string }[];
+}
+
+export interface OnboardingInfo {
+  kickoffMeeting?: any;
+  reviewMeetingSchedule?: string;
+  followUpChannel?: 'whatsapp' | 'slack' | 'email';
+  attendees?: string;
+  timeline?: TimelineSLA;
+  stakeholders?: Stakeholders;
+  documents?: LegalDocuments;
+}
+
+export interface RiskManagement {
+  expectedRisks?: string;
+  mitigationPlan?: string;
+  approvalPolicy?: string;
+  escalationPolicy?: string;
+}
+
+export interface QualityAssurance {
+  checklist?: string;
+  ipRightsCheck?: boolean;
+  toneOfVoice?: string;
+  definitionOfDone?: string;
+}
+
+export interface ClientTicket {
   id: string;
+  type: 'design' | 'content' | 'ad' | 'technical';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  targetDate?: any;
+  status: 'open' | 'in_progress' | 'waiting_client' | 'closed';
+}
+
+export interface ActivityLogEntry {
+  timestamp: any;
+  activity: string;
   userId: string;
-  type: string;
-  message: string;
-  relatedClientId: string;
-  read: boolean;
-  createdAt: any; // Firestore Timestamp
 }

@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -6,72 +7,21 @@
       "type": "object",
       "description": "Represents a user in the marketing team dashboard.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the user entity."
-        },
-        "email": {
-          "type": "string",
-          "description": "Email address of the user.",
-          "format": "email"
-        },
-        "role": {
-          "type": "string",
-          "description": "Role of the user (admin, moderator, pr, market_researcher, creative, content)."
-        },
-        "name": {
-          "type": "string",
-          "description": "Full name of the user."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the user account was created.",
-          "format": "date-time"
-        },
-        "active": {
-          "type": "boolean",
-          "description": "Indicates whether the user account is active."
-        },
-        "phone": {
-          "type": "string",
-          "description": "Phone number of the user."
-        },
-        "address": {
-          "type": "string",
-          "description": "Address of the user."
-        },
-        "courses": {
-          "type": "array",
-          "description": "List of courses the user is supposed to take.",
-          "items": {
-            "type": "string"
-          }
-        },
-        "salary": {
-          "type": "number",
-          "description": "Salary of the user."
-        },
-        "attendanceDays": {
-          "type": "number",
-          "description": "Number of attendance days."
-        },
-        "absenceDays": {
-          "type": "number",
-          "description": "Number of absence days."
-        },
-        "directManagerId": {
-          "type": "string",
-          "description": "The user ID of the direct manager."
-        }
+        "id": { "type": "string", "description": "Unique identifier for the user entity." },
+        "email": { "type": "string", "description": "Email address of the user.", "format": "email" },
+        "role": { "type": "string", "description": "Role of the user (admin, moderator, pr, market_researcher, creative, content)." },
+        "name": { "type": "string", "description": "Full name of the user." },
+        "createdAt": { "type": "string", "description": "Timestamp indicating when the user account was created.", "format": "date-time" },
+        "active": { "type": "boolean", "description": "Indicates whether the user account is active." },
+        "phone": { "type": "string", "description": "Phone number of the user." },
+        "address": { "type": "string", "description": "Address of the user." },
+        "courses": { "type": "array", "description": "List of courses the user is supposed to take.", "items": { "type": "string" } },
+        "salary": { "type": "number", "description": "Salary of the user." },
+        "attendanceDays": { "type": "number", "description": "Number of attendance days." },
+        "absenceDays": { "type": "number", "description": "Number of absence days." },
+        "directManagerId": { "type": "string", "description": "The user ID of the direct manager." }
       },
-      "required": [
-        "id",
-        "email",
-        "role",
-        "name",
-        "createdAt",
-        "active"
-      ]
+      "required": ["id", "email", "role", "name", "createdAt", "active"]
     },
     "Client": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -79,103 +29,35 @@
       "type": "object",
       "description": "Represents a client managed by the marketing team.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the client entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "Name of the client."
-        },
-        "phone": {
-          "type": "string",
-          "description": "Phone number of the client."
-        },
-        "businessName": {
-          "type": "string",
-          "description": "The name of the client's business."
-        },
-        "businessField": {
-          "type": "string",
-          "description": "The field or industry of the client's business."
-        },
-        "moderatorId": {
-          "type": "string",
-          "description": "The ID of the moderator assigned to this client."
-        },
-        "socialMediaLinks": {
-          "type": "string",
-          "description": "Links to the client's social media profiles."
-        },
-        "transferDate": {
-          "type": "string",
-          "description": "The date the client was transferred.",
-          "format": "date-time"
-        },
-        "status": {
-          "type": "string",
-          "description": "The general status of the client (e.g., pending, in_progress)."
-        },
-        "servicesOffered": {
-          "type": "string",
-          "description": "A free-text description of services offered to the client."
-        },
-        "registeredBy": {
-          "type": "string",
-          "description": "Reference to User who registered the client. (Relationship: User 1:N Client)"
-        },
-        "registeredAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the client was registered.",
-          "format": "date-time"
-        },
-        "basicInfo": {
-          "type": "string",
-          "description": "basic info of the client, such as email, address, and notes."
-        },
-        "assignedToPR": {
-          "type": "string",
-          "description": "Reference to User assigned to PR for this client. (Relationship: User 1:N Client)"
-        },
-        "prStatus": {
-          "type": "string",
-          "description": "PR status of the client (pending, in_progress, under_review, completed)."
-        },
-        "prAppointments": {
-          "type": "array",
-          "description": "Appointment list for the PR status",
-          "items": {
-            "type": "string"
-          }
-        },
-        "transferStatus": {
-          "type": "string",
-          "description": "Transfer status of the client (active, bad_client, approved, converted)."
-        },
+        "id": { "type": "string", "description": "Unique identifier for the client entity." },
+        "name": { "type": "string", "description": "Name of the client." },
+        "phone": { "type": "string", "description": "Phone number of the client." },
+        "businessName": { "type": "string", "description": "The name of the client's business." },
+        "businessField": { "type": "string", "description": "The field or industry of the client's business." },
+        "moderatorId": { "type": "string", "description": "The ID of the moderator assigned to this client." },
+        "socialMediaLinks": { "type": "string", "description": "Links to the client's social media profiles." },
+        "transferDate": { "type": "string", "description": "The date the client was transferred.", "format": "date-time" },
+        "status": { "type": "string", "description": "The general status of the client (e.g., pending, in_progress)." },
+        "servicesOffered": { "type": "string", "description": "A free-text description of services offered to the client." },
+        "registeredBy": { "type": "string", "description": "Reference to User who registered the client." },
+        "registeredAt": { "type": "string", "description": "Timestamp indicating when the client was registered.", "format": "date-time" },
+        "basicInfo": { "type": "string", "description": "basic info of the client, such as email, address, and notes." },
+        "assignedToPR": { "type": "string", "description": "Reference to User assigned to PR for this client." },
+        "prStatus": { "type": "string", "description": "PR status of the client." },
+        "prAppointments": { "type": "array", "items": { "type": "string" } },
+        "transferStatus": { "type": "string", "description": "Transfer status of the client." },
         "serviceRequests": {
           "type": "object",
-          "description": "Specifies which services the client has requested.",
           "properties": {
-            "marketResearch": {
-              "type": "boolean"
-            },
-            "content": {
-              "type": "boolean"
-            },
-            "creative": {
-              "type": "boolean"
-            },
-            "aiVideo": {
-              "type": "boolean"
-            },
-            "ads": {
-              "type": "boolean"
-            }
+            "marketResearch": { "type": "boolean" },
+            "content": { "type": "boolean" },
+            "creative": { "type": "boolean" },
+            "aiVideo": { "type": "boolean" },
+            "ads": { "type": "boolean" }
           }
         },
         "marketResearchFiles": {
           "type": "array",
-          "description": "File list for market research.",
           "items": {
             "type": "object",
             "properties": {
@@ -188,137 +70,162 @@
             "required": ["fileName", "fileUrl", "uploadedAt", "uploadedBy", "category"]
           }
         },
-        "researcherComments": {
-          "type": "string",
-          "description": "Comments from the market researcher."
-        },
-        "researchStatus": {
-          "type": "string",
-          "description": "Market research status (pending, in_progress, completed)."
-        },
-        "creativeStatus": {
-          "type": "string",
-          "description": "Creative status (in_progress, completed, cancelled)."
-        },
-        "creativeNotes": {
-          "type": "string",
-          "description": "Notes from the creative team."
-        },
-        "contentCalendar": {
-          "type": "array",
-          "description": "Array of content calender.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": { "type": "string" },
-              "date": { "type": "string", "format": "date-time" },
-              "platform": { "type": "string" },
-              "format": { "type": "string" },
-              "postGoal": { "type": "string" },
-              "contentPillar": { "type": "string" },
-              "campaign": { "type": "string" },
-              "targetAudience": { "type": "string" },
-              "language": { "type": "string" },
-              "title": { "type": "string" },
-              "caption": { "type": "string" },
-              "cta": { "type": "string" },
-              "hashtags": { "type": "string" },
-              "designNotes": { "type": "string" },
-              "references": { "type": "string" },
-              "brandAssets": { "type": "array", "items": { "type": "string" } },
-              "approvalStatus": { "type": "string" },
-              "dimensions": { "type": "string" },
-              "videoDuration": { "type": "number" },
-              "exportPreset": { "type": "string" },
-              "subtitles": { "type": "boolean" },
-              "designer": { "type": "string" },
-              "writer": { "type": "string" },
-              "versions": { "type": "array", "items": { "type": "object", "properties": { "url": { "type": "string" }, "name": { "type": "string" } } } },
-              "revisionRounds": { "type": "number" },
-              "reviewer": { "type": "string" },
-              "reviewDate": { "type": "string", "format": "date-time" },
-              "reviewNotes": { "type": "string" },
-              "publishMethod": { "type": "string" },
-              "schedulingTool": { "type": "string" },
-              "postUrl": { "type": "string" },
-              "isBoosted": { "type": "boolean" },
-              "boostBudget": { "type": "number" },
-              "utm": { "type": "string" },
-              "reach": { "type": "number" },
-              "impressions": { "type": "number" },
-              "likes": { "type": "number" },
-              "comments": { "type": "number" },
-              "shares": { "type": "number" },
-              "saves": { "type": "number" },
-              "ctr": { "type": "number" },
-              "cpc": { "type": "number" },
-              "cpl": { "type": "number" },
-              "roas": { "type": "number" },
-              "performanceNotes": { "type": "string" }
-            }
-          }
-        },
-        "contentStatus": {
-          "type": "string",
-          "description": "Content status (pending, in_progress, completed)."
-        },
-        "contentTasks": {
-          "type": "array",
-          "description": "Array of tasks for content creation",
-          "items": {
-            "type": "string"
-          }
-        },
-        "finalAgreement": {
-          "type": "object",
-          "description": "Final agreement details.",
-          "properties": {
-            "approved": {
-              "type": "boolean"
-            },
-            "agreementDetails": {
-              "type": "string"
-            },
-            "duration": {
-              "type": "number"
-            },
-            "startDate": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "approvedBy": {
-              "type": "string"
-            },
-            "approvedAt": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "agreedPrice": {
-              "type": "number"
-            },
-            "firstPayment": {
-              "type": "number"
-            },
-            "paymentScreenshotUrl": {
-              "type": "string"
-            },
-            "requiredExecution": {
-              "type": "string"
-            }
-          }
-        }
+        "researcherComments": { "type": "string" },
+        "researchStatus": { "type": "string" },
+        "creativeStatus": { "type": "string" },
+        "creativeNotes": { "type": "string" },
+        "contentCalendar": { "type": "array", "items": { "$ref": "#/entities/CalendarEntry" } },
+        "contentStatus": { "type": "string" },
+        "contentTasks": { "type": "array", "items": { "type": "string" } },
+        "finalAgreement": { "$ref": "#/entities/FinalAgreement" },
+        "operationalData": { "$ref": "#/entities/OperationalData" },
+        "leadInfo": { "$ref": "#/entities/LeadInfo" },
+        "scopeOfWork": { "$ref": "#/entities/ScopeOfWork" },
+        "kpis": { "$ref": "#/entities/KeyPerformanceIndicators" },
+        "accessCredentials": { "$ref": "#/entities/AccessCredentials" },
+        "onboardingInfo": { "$ref": "#/entities/OnboardingInfo" },
+        "riskManagement": { "$ref": "#/entities/RiskManagement" },
+        "qualityAssurance": { "$ref": "#/entities/QualityAssurance" },
+        "clientTickets": { "type": "array", "items": { "$ref": "#/entities/ClientTicket" } },
+        "activityLog": { "type": "array", "items": { "$ref": "#/entities/ActivityLogEntry" } }
       },
-      "required": [
-        "id",
-        "name",
-        "phone",
-        "businessName",
-        "businessField",
-        "moderatorId",
-        "assignedToPR",
-        "registeredBy",
-        "registeredAt"
-      ]
+      "required": ["id", "name", "phone", "businessName", "businessField", "moderatorId", "assignedToPR", "registeredBy", "registeredAt"]
+    },
+    "CalendarEntry": {
+        "title": "Calendar Entry",
+        "type": "object",
+        "properties": {
+            "id": { "type": "string" }, "date": { "type": "string", "format": "date-time" },
+            "platform": { "type": "string" }, "format": { "type": "string" }, "postGoal": { "type": "string" },
+            "contentPillar": { "type": "string" }, "campaign": { "type": "string" }, "targetAudience": { "type": "string" },
+            "language": { "type": "string" }, "title": { "type": "string" }, "caption": { "type": "string" },
+            "cta": { "type": "string" }, "hashtags": { "type": "string" }, "designNotes": { "type": "string" },
+            "references": { "type": "string" }, "brandAssets": { "type": "array", "items": { "type": "string" } },
+            "dimensions": { "type": "string" }, "videoDuration": { "type": "number" }, "exportPreset": { "type": "string" },
+            "subtitles": { "type": "boolean" }, "designer": { "type": "string" }, "writer": { "type": "string" },
+            "versions": { "type": "array", "items": { "type": "object", "properties": { "url": { "type": "string" }, "name": { "type": "string" } } } },
+            "revisionRounds": { "type": "number" }, "approvalStatus": { "type": "string" }, "reviewer": { "type": "string" },
+            "reviewDate": { "type": "string", "format": "date-time" }, "reviewNotes": { "type": "string" },
+            "publishMethod": { "type": "string" }, "schedulingTool": { "type": "string" }, "postUrl": { "type": "string" },
+            "isBoosted": { "type": "boolean" }, "boostBudget": { "type": "number" }, "utm": { "type": "string" },
+            "reach": { "type": "number" }, "impressions": { "type": "number" }, "likes": { "type": "number" },
+            "comments": { "type": "number" }, "shares": { "type": "number" }, "saves": { "type": "number" },
+            "ctr": { "type": "number" }, "cpc": { "type": "number" }, "cpl": { "type": "number" }, "roas": { "type": "number" },
+            "performanceNotes": { "type": "string" }
+        }
+    },
+    "FinalAgreement": {
+        "title": "Final Agreement",
+        "type": "object",
+        "properties": {
+            "approved": { "type": "boolean" }, "agreementDetails": { "type": "string" }, "duration": { "type": "number" },
+            "startDate": { "type": "string", "format": "date-time" }, "approvedBy": { "type": "string" },
+            "approvedAt": { "type": "string", "format": "date-time" }, "agreedPrice": { "type": "number" },
+            "firstPayment": { "type": "number" }, "paymentScreenshotUrl": { "type": "string" },
+            "requiredExecution": { "type": "string" }, "currency": { "type": "string" }, "paymentPlan": { "type": "string" },
+            "paymentMethod": { "type": "string" }, "nextPaymentDate": { "type": "string", "format": "date-time" },
+            "serviceTerminationPolicy": { "type": "string" }
+        }
+    },
+    "OperationalData": {
+        "title": "Operational Data", "type": "object",
+        "properties": {
+            "internalClientId": { "type": "string" }, "preferredContactMethod": { "type": "string" },
+            "bestContactTime": { "type": "string" }, "clientTimezone": { "type": "string" },
+            "alternativeContactName": { "type": "string" }, "alternativeContactNumber": { "type": "string" }
+        }
+    },
+    "LeadInfo": {
+        "title": "Lead Info", "type": "object",
+        "properties": {
+            "source": { "type": "string" }, "campaignName": { "type": "string" },
+            "firstContactDate": { "type": "string", "format": "date-time" }, "lastContactDate": { "type": "string", "format": "date-time" },
+            "pipelineStage": { "type": "string" }, "lostReason": { "type": "string" }
+        }
+    },
+    "ScopeOfWork": {
+        "title": "Scope Of Work", "type": "object",
+        "properties": {
+            "packageOrPlanName": { "type": "string" }, "detailedServices": { "type": "string" },
+            "platforms": { "type": "array", "items": { "type": "string" } },
+            "languages": { "type": "array", "items": { "type": "string" } },
+            "clientMaterials": { "type": "array", "items": { "type": "string" } },
+            "photographyNeeded": { "type": "boolean" }, "photographyDetails": { "type": "string" },
+            "usp": { "type": "string" }, "brandSafety": { "type": "string" }
+        }
+    },
+    "KeyPerformanceIndicators": {
+        "title": "Key Performance Indicators", "type": "object",
+        "properties": {
+            "mainGoal": { "type": "string" }, "monthlyTargets": { "type": "string" },
+            "aov": { "type": "number" }, "goalTimeline": { "type": "string" }
+        }
+    },
+    "TimelineSLA": {
+        "title": "TimelineSLA", "type": "object",
+        "properties": {
+            "executionStartDate": { "type": "string", "format": "date-time" }, "firstDraftDeliveryDate": { "type": "string", "format": "date-time" },
+            "weeklySchedule": { "type": "string" }, "clientResponseSLA": { "type": "string" },
+            "clientRevisionSLA": { "type": "string" }, "allowedRevisions": { "type": "number" }
+        }
+    },
+    "Stakeholders": {
+        "title": "Stakeholders", "type": "object",
+        "properties": {
+            "moderatorId": { "type": "string" }, "prId": { "type": "string" }, "designerId": { "type": "string" },
+            "researcherId": { "type": "string" }, "accountManagerId": { "type": "string" },
+            "clientApprovers": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "role": { "type": "string" } } } }
+        }
+    },
+    "AccessCredentials": {
+        "title": "Access Credentials", "type": "object",
+        "properties": {
+            "socialAccounts": { "type": "array", "items": { "type": "object", "properties": { "platform": { "type": "string" }, "url": { "type": "string" }, "role": { "type": "string" } } } },
+            "businessManagerId": { "type": "string" }, "pixelId": { "type": "string" }, "hostingInfo": { "type": "string" }
+        }
+    },
+    "LegalDocuments": {
+        "title": "Legal Documents", "type": "object",
+        "properties": {
+            "logoUsageApproval": { "type": "boolean" }, "adLegalApproval": { "type": "boolean" },
+            "contracts": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "url": { "type": "string" } } } }
+        }
+    },
+    "OnboardingInfo": {
+        "title": "Onboarding Info", "type": "object",
+        "properties": {
+            "kickoffMeeting": { "type": "string", "format": "date-time" }, "reviewMeetingSchedule": { "type": "string" },
+            "followUpChannel": { "type": "string" }, "attendees": { "type": "string" },
+            "timeline": { "$ref": "#/entities/TimelineSLA" }, "stakeholders": { "$ref": "#/entities/Stakeholders" },
+            "documents": { "$ref": "#/entities/LegalDocuments" }
+        }
+    },
+    "RiskManagement": {
+        "title": "Risk Management", "type": "object",
+        "properties": {
+            "expectedRisks": { "type": "string" }, "mitigationPlan": { "type": "string" },
+            "approvalPolicy": { "type": "string" }, "escalationPolicy": { "type": "string" }
+        }
+    },
+    "QualityAssurance": {
+        "title": "Quality Assurance", "type": "object",
+        "properties": {
+            "checklist": { "type": "string" }, "ipRightsCheck": { "type": "boolean" },
+            "toneOfVoice": { "type": "string" }, "definitionOfDone": { "type": "string" }
+        }
+    },
+    "ClientTicket": {
+        "title": "Client Ticket", "type": "object",
+        "properties": {
+            "id": { "type": "string" }, "type": { "type": "string" }, "priority": { "type": "string" },
+            "targetDate": { "type": "string", "format": "date-time" }, "status": { "type": "string" }
+        }
+    },
+    "ActivityLogEntry": {
+        "title": "Activity Log Entry", "type": "object",
+        "properties": {
+            "timestamp": { "type": "string", "format": "date-time" }, "activity": { "type": "string" }, "userId": { "type": "string" }
+        }
     },
     "Notification": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -326,45 +233,11 @@
       "type": "object",
       "description": "Represents a notification for a user.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the notification entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User who should receive the notification. (Relationship: User 1:N Notification)"
-        },
-        "type": {
-          "type": "string",
-          "description": "Type of notification."
-        },
-        "message": {
-          "type": "string",
-          "description": "Message of the notification."
-        },
-        "relatedClientId": {
-          "type": "string",
-          "description": "Reference to Client related to the notification. (Relationship: Client 1:N Notification)"
-        },
-        "read": {
-          "type": "boolean",
-          "description": "Indicates whether the notification has been read."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp indicating when the notification was created.",
-          "format": "date-time"
-        }
+        "id": { "type": "string" }, "userId": { "type": "string" }, "type": { "type": "string" },
+        "message": { "type": "string" }, "relatedClientId": { "type": "string" },
+        "read": { "type": "boolean" }, "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": [
-        "id",
-        "userId",
-        "type",
-        "message",
-        "relatedClientId",
-        "read",
-        "createdAt"
-      ]
+      "required": ["id", "userId", "type", "message", "relatedClientId", "read", "createdAt"]
     },
     "SystemLog": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -372,115 +245,20 @@
       "type": "object",
       "description": "Represents a system log entry.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the system log entry."
-        },
-        "action": {
-          "type": "string",
-          "description": "Action performed (e.g., 'client_created', 'status_updated')."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User who performed the action. (Relationship: User 1:N SystemLog)"
-        },
-        "clientId": {
-          "type": "string",
-          "description": "Reference to Client related to the action (if applicable). (Relationship: Client 1:N SystemLog)"
-        },
-        "timestamp": {
-          "type": "string",
-          "description": "Timestamp indicating when the action was performed.",
-          "format": "date-time"
-        },
-        "details": {
-          "type": "string",
-          "description": "Additional details about the action."
-        }
+        "id": { "type": "string" }, "action": { "type": "string" }, "userId": { "type": "string" },
+        "clientId": { "type": "string" }, "timestamp": { "type": "string", "format": "date-time" },
+        "details": { "type": "string" }
       },
-      "required": [
-        "id",
-        "action",
-        "userId",
-        "clientId",
-        "timestamp",
-        "details"
-      ]
+      "required": ["id", "action", "userId", "clientId", "timestamp", "details"]
     }
   },
-  "auth": {
-    "providers": [
-      "password",
-      "anonymous"
-    ]
-  },
+  "auth": { "providers": ["password", "anonymous"] },
   "firestore": {
     "structure": [
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "User",
-          "schema": {
-            "$ref": "#/backend/entities/User"
-          },
-          "description": "Stores user data. Includes the 'role' field to manage user access levels, avoiding custom claims.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/clients/{clientId}",
-        "definition": {
-          "entityName": "Client",
-          "schema": {
-            "$ref": "#/backend/entities/Client"
-          },
-          "description": "Stores client data. Includes denormalized 'registeredBy' and 'assignedToPR' fields for authorization independence, enabling secure client access based on the user's role and ownership.",
-          "params": [
-            {
-              "name": "clientId",
-              "description": "The unique identifier of the client."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/notifications/{notificationId}",
-        "definition": {
-          "entityName": "Notification",
-          "schema": {
-            "$ref": "#/backend/entities/Notification"
-          },
-          "description": "Stores notifications. Uses a path-based ownership model `/users/{userId}/notifications/{notificationId}` so that security rules can ensure only the user can read their notifications.",
-          "params": [
-            {
-              "name": "notificationId",
-              "description": "The unique identifier of the notification."
-            }
-          ]
-        }
-      },
-      {
-        "path": "/systemLogs/{logId}",
-        "definition": {
-          "entityName": "SystemLog",
-          "schema": {
-            "$ref": "#/backend/entities/SystemLog"
-          },
-          "description": "Stores system logs for auditing and debugging purposes.",
-          "params": [
-            {
-              "name": "logId",
-              "description": "The unique identifier of the system log entry."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "The Firestore structure is designed to provide a secure and scalable solution for the marketing team dashboard, adhering to the principles of Authorization Independence, Clarity of Intent, DBAC (Database-Based Access Control), and QAPs (Rules are not Filters). \n\n*   **Authorization Independence:** Achieved through denormalization. For example, the `clients` collection stores the `registeredBy` field, which is the `userId` of the moderator who created the client. This allows security rules to validate the user's role and the client's ownership without needing to perform a `get()` operation to retrieve the user's role from the `/users` collection. This also applies to `assignedToPR`, enabling direct access control based on this field.\n*   **QAPs (Rules are not Filters):** Supported by structural segregation and the use of hierarchical paths for user-owned data and collaborative access models. The segregation of clients and users into distinct collections, along with role-based access control enforced by security rules, ensures that list operations are secure and efficient. The `/users/{userId}/notifications` path allows listing of notifications specific to a user, and security rules can efficiently filter by `request.auth.uid`.\n*   **DBAC:** Roles are stored directly in the `users` collection. This avoids the complexity and potential security issues associated with custom claims. Security rules use the `request.auth.uid` to verify the user's identity and retrieve their role from the `users` collection, enabling role-based access control.\n*   **Structural Segregation:** Enforced by storing different entities in separate collections. For example, `/users` stores user information, `/clients` stores client data, `/notifications` stores notifications, and `/systemLogs` stores system logs. This segregation simplifies security rules and ensures that each collection has a homogeneous security posture.\n*   **Access Modeling:** Uses path-based ownership for user-specific data such as notifications (`/users/{userId}/notifications/{notificationId}`). This structure facilitates straightforward security rules based on `request.auth.uid`. The membership map pattern is not applicable in this design since there are no collaborative entities.\n*   **Data Clarity and Predictability:** Achieved through explicit state modeling (e.g., the `prStatus` field in the `clients` collection) and consistent naming conventions. All paths and fields are named semantically, making the structure easy to understand and maintain.\n"
+      { "path": "/users/{userId}", "definition": { "entityName": "User", "schema": { "$ref": "#/entities/User" } } },
+      { "path": "/clients/{clientId}", "definition": { "entityName": "Client", "schema": { "$ref": "#/entities/Client" } } },
+      { "path": "/notifications/{notificationId}", "definition": { "entityName": "Notification", "schema": { "$ref": "#/entities/Notification" } } },
+      { "path": "/systemLogs/{logId}", "definition": { "entityName": "SystemLog", "schema": { "$ref": "#/entities/SystemLog" } } }
+    ]
   }
 }
