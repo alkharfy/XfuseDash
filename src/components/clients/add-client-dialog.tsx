@@ -43,17 +43,19 @@ export function AddClientDialog({ children }: { children?: React.ReactNode }) {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
 
+  const canListUsers = role === 'admin' || role === 'moderator';
+
   const moderatorsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !canListUsers) return null;
     return query(collection(firestore, "users"), where("role", "==", "moderator"));
-  }, [firestore]);
+  }, [firestore, canListUsers]);
 
   const { data: moderators } = useCollection<User>(moderatorsQuery);
   
   const prUsersQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !canListUsers) return null;
     return query(collection(firestore, "users"), where("role", "==", "pr"));
-  }, [firestore]);
+  }, [firestore, canListUsers]);
 
   const { data: prUsers } = useCollection<User>(prUsersQuery);
 
