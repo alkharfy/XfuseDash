@@ -59,14 +59,23 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
         postGoal: idea.postGoal,
         contentPillar: idea.contentPillar,
         language: idea.language,
-        caption: idea.caption,
+        caption: idea.caption || "",
         cta: idea.cta,
-        hashtags: idea.hashtags,
-        designNotes: idea.designNotes,
+        hashtags: idea.hashtags || "",
+        designNotes: idea.designNotes || "",
         approvalStatus: idea.approvalStatus || (idea.status ? 'draft' : undefined)
     } 
     : {
       title: "",
+      platform: undefined,
+      format: undefined,
+      postGoal: undefined,
+      contentPillar: undefined,
+      language: undefined,
+      caption: "",
+      cta: undefined,
+      hashtags: "",
+      designNotes: "",
       approvalStatus: 'draft',
     },
   });
