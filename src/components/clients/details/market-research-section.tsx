@@ -42,57 +42,91 @@ const FileUploadArea = ({
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      if (!user) {
-        toast({ variant: "destructive", title: "خطأ", description: "يجب أن تكون مسجلاً للدخول لرفع الملفات." });
-        return;
-      }
-      
-      const filePath = `${clientId}/${file.name}`;
-      const storageRef = ref(storage, filePath);
-      const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
+    if (!file) return;
 
-      setIsUploading(true);
-
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const currentProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setProgress(currentProgress);
-        },
-        (error) => {
-          console.error("Upload failed:", error);
-          setIsUploading(false);
-          toast({ variant: "destructive", title: "خطأ في الرفع", description: error.message });
-          reject(error);
-        },
-        async () => {
-          try {
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            
-            const clientRef = doc(firestore, "clients", clientId);
-            const newFile: any = {
-                fileName: file.name,
-                fileUrl: downloadURL,
-                uploadedAt: new Date(),
-                uploadedBy: user.uid,
-                category: category,
-            };
-
-            await updateDocumentNonBlocking(clientRef, {
-                marketResearchFiles: arrayUnion(newFile)
-            });
-
-            toast({ title: "نجاح", description: `تم رفع الملف "${file.name}" بنجاح.` });
-            setIsUploading(false);
-          } catch (e) {
-            console.error("Could not get download URL or update document:", e);
-            toast({ variant: "destructive", title: "خطأ بعد الرفع", description: (e as Error).message });
-            setIsUploading(false);
-          }
-        }
-      );
+    if (!user) {
+      toast({ variant: "destructive", title: "خطأ", description: "يجب أن تكون مسجلاً للدخول لرفع الملفات." });
+      return;
     }
+
+    // Validate file size (10MB max)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "حجم الملف كبير جداً. الحد الأقصى 10 ميجابايت."
+      });
+      return;
+    }
+
+    console.log(`[Upload] Starting upload for file: ${file.name}, size: ${file.size}, category: ${category}, clientId: ${clientId}`);
+
+    const filePath = `${clientId}/${file.name}`;
+    const storageRef = ref(storage, filePath);
+    const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
+
+    setIsUploading(true);
+    setProgress(0);
+
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const currentProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        console.log(`[Upload] Progress: ${currentProgress.toFixed(2)}% (${snapshot.bytesTransferred}/${snapshot.totalBytes} bytes)`);
+        setProgress(currentProgress);
+      },
+      (error) => {
+        console.error("[Upload] Upload failed:", error);
+        console.error("[Upload] Error code:", error.code);
+        console.error("[Upload] Error message:", error.message);
+        setIsUploading(false);
+        setProgress(0);
+        toast({
+          variant: "destructive",
+          title: "خطأ في الرفع",
+          description: `${error.message} (${error.code})`
+        });
+      },
+      async () => {
+        try {
+          console.log('[Upload] Upload completed, getting download URL...');
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          console.log('[Upload] Download URL obtained:', downloadURL);
+
+          const clientRef = doc(firestore, "clients", clientId);
+          const newFile: any = {
+            fileName: file.name,
+            fileUrl: downloadURL,
+            uploadedAt: new Date(),
+            uploadedBy: user.uid,
+            category: category,
+          };
+
+          console.log('[Upload] Updating Firestore document...');
+          await updateDocumentNonBlocking(clientRef, {
+            marketResearchFiles: arrayUnion(newFile)
+          });
+
+          console.log('[Upload] Successfully updated Firestore');
+          toast({ title: "نجاح", description: `تم رفع الملف "${file.name}" بنجاح.` });
+          setIsUploading(false);
+          setProgress(0);
+
+          // Reset input
+          e.target.value = '';
+        } catch (e) {
+          console.error("[Upload] Could not get download URL or update document:", e);
+          toast({
+            variant: "destructive",
+            title: "خطأ بعد الرفع",
+            description: (e as Error).message
+          });
+          setIsUploading(false);
+          setProgress(0);
+        }
+      }
+    );
   };
     
   const inputId = `file-upload-${category}`;

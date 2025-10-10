@@ -1,0 +1,40 @@
+rules_version = '2';
+
+/**
+ * Firebase Storage Security Rules for Marketing Team Dashboard
+ *
+ * Purpose: Secure file uploads for market research files
+ *
+ * Structure:
+ * - /{clientId}/{fileName} - Files organized by client ID
+ *
+ * Security:
+ * - Read: Authenticated users can read all files
+ * - Write: Authenticated users can upload files up to 10MB
+ * - File size limit: 10MB per file
+ */
+
+service firebase.storage {
+    match /b/{bucket}/o {
+        // Allow authenticated users to read all files
+        match /{allPaths=**} {
+            allow read: if request.auth != null;
+        }
+
+        // Allow authenticated users to upload files to client folders
+        // Files are organized as: /{clientId}/{fileName}
+        match /{clientId}/{fileName} {
+            allow write: if request.auth != null
+                && request.resource.size < 10 * 1024 * 1024 // Max 10MB
+                && request.resource.contentType.matches('.*'); // Allow all file types
+        }
+
+        // Optional: Specific path for market research files with categories
+        // Files can also be organized as: /{clientId}/market-research/{category}/{fileName}
+        match /{clientId}/market-research/{category}/{fileName} {
+            allow write: if request.auth != null
+                && request.resource.size < 10 * 1024 * 1024 // Max 10MB
+                && category in ['creative', 'copywriter', 'media_buyer', 'manager', 'client'];
+        }
+    }
+}
