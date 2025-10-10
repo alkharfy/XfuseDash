@@ -16,9 +16,10 @@ export default function UsersPage() {
     const firestore = useFirestore();
     
     const usersQuery = useMemoFirebase(() => {
-        if (!firestore) return null;
+        // Only fetch users if the current user is an admin
+        if (!firestore || role !== 'admin') return null;
         return collection(firestore, 'users');
-    }, [firestore]);
+    }, [firestore, role]);
 
     const { data: users, isLoading } = useCollection<User>(usersQuery);
     
