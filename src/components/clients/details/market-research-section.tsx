@@ -40,8 +40,15 @@ const FileUploadArea = ({
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  const uploadFile = (filePath: string, file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
+  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!user) {
+        toast({ variant: "destructive", title: "خطأ", description: "يجب أن تكون مسجلاً للدخول لرفع الملفات." });
+        return;
+      }
+      
+      const filePath = `${clientId}/${file.name}`;
       const storageRef = ref(storage, filePath);
       const uploadTask: UploadTask = uploadBytesResumable(storageRef, file);
 
@@ -56,36 +63,12 @@ const FileUploadArea = ({
         (error) => {
           console.error("Upload failed:", error);
           setIsUploading(false);
+          toast({ variant: "destructive", title: "خطأ في الرفع", description: error.message });
           reject(error);
         },
         async () => {
           try {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            setIsUploading(false);
-            setProgress(100);
-            resolve(downloadURL);
-          } catch (e) {
-            console.error("Could not get download URL:", e);
-            setIsUploading(false);
-            reject(e);
-          }
-        }
-      );
-    });
-  };
-
-  const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-       if (!user) {
-            toast({ variant: "destructive", title: "خطأ", description: "يجب أن تكون مسجلاً للدخول لرفع الملفات." });
-            return;
-        }
-        
-        const filePath = `${clientId}/${file.name}`;
-        
-        try {
-            const downloadURL = await uploadFile(filePath, file);
             
             const clientRef = doc(firestore, "clients", clientId);
             const newFile: any = {
@@ -101,9 +84,14 @@ const FileUploadArea = ({
             });
 
             toast({ title: "نجاح", description: `تم رفع الملف "${file.name}" بنجاح.` });
-        } catch (uploadError) {
-             toast({ variant: "destructive", title: "خطأ في الرفع", description: (uploadError as Error).message });
+            setIsUploading(false);
+          } catch (e) {
+            console.error("Could not get download URL or update document:", e);
+            toast({ variant: "destructive", title: "خطأ بعد الرفع", description: (e as Error).message });
+            setIsUploading(false);
+          }
         }
+      );
     }
   };
     
