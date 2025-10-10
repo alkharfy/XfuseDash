@@ -105,6 +105,8 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
   const firestore = useFirestore();
   const { toast } = useToast();
   const { role } = useAuthStore();
+
+  const canManageAssignments = role === 'admin' || role === 'moderator';
   
   const isCustomCta = ctaOptions.find(opt => opt.value === idea?.cta) === undefined && !!idea?.cta;
 
@@ -531,60 +533,61 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
                 </div>
 
                  {/* Workflow Section */}
-                <div className="space-y-4 p-4 border rounded-lg">
-                  <h3 className="font-semibold text-lg">4. سير العمل والتسليمات</h3>
-                  { (role === 'admin' || role === 'moderator') &&
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="writer"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>المسؤول عن الكتابة</FormLabel>
-                            <UserSelector
-                              selectedUser={field.value}
-                              onSelectUser={field.onChange}
-                              roles={['content', 'creative']}
-                            />
+                 {canManageAssignments && (
+                    <div className="space-y-4 p-4 border rounded-lg">
+                        <h3 className="font-semibold text-lg">4. سير العمل والتسليمات</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                            control={form.control}
+                            name="writer"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>المسؤول عن الكتابة</FormLabel>
+                                <UserSelector
+                                selectedUser={field.value}
+                                onSelectUser={field.onChange}
+                                roles={['content', 'creative']}
+                                />
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="designer"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>المسؤول عن التصميم</FormLabel>
+                                <UserSelector
+                                selectedUser={field.value}
+                                onSelectUser={field.onChange}
+                                roles={['creative']}
+                                />
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        </div>
+                        <FormField control={form.control} name="approvalStatus" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>حالة الموافقة</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue placeholder="اختر الحالة..." /></SelectTrigger></FormControl>
+                            <SelectContent>
+                                <SelectItem value="draft">مسودة (Draft)</SelectItem>
+                                <SelectItem value="review">للمراجعة (Review)</SelectItem>
+                                <SelectItem value="with_client">مع العميل (With Client)</SelectItem>
+                                <SelectItem value="approved">معتمد (Approved)</SelectItem>
+                                <SelectItem value="rejected">مرفوض (Rejected)</SelectItem>
+                            </SelectContent>
+                            </Select>
                             <FormMessage />
-                          </FormItem>
+                        </FormItem>
                         )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="designer"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>المسؤول عن التصميم</FormLabel>
-                             <UserSelector
-                              selectedUser={field.value}
-                              onSelectUser={field.onChange}
-                              roles={['creative']}
-                            />
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                    />
                     </div>
-                  }
-                   <FormField control={form.control} name="approvalStatus" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>حالة الموافقة</FormLabel>
-                         <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="اختر الحالة..." /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            <SelectItem value="draft">مسودة (Draft)</SelectItem>
-                            <SelectItem value="review">للمراجعة (Review)</SelectItem>
-                            <SelectItem value="with_client">مع العميل (With Client)</SelectItem>
-                            <SelectItem value="approved">معتمد (Approved)</SelectItem>
-                            <SelectItem value="rejected">مرفوض (Rejected)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                 )}
+
 
                  {/* Publishing & Promotion Section */}
                 <div className="space-y-4 p-4 border rounded-lg">
@@ -709,3 +712,5 @@ export function IdeaDialog({ isOpen, setIsOpen, client, selectedDate, idea }: Id
     </Dialog>
   );
 }
+
+    
