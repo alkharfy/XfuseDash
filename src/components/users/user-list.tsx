@@ -14,10 +14,12 @@ import { AddUserDialog } from "./add-user-dialog"
 export function UserList({ users }: { users: User[] }) {
   const [searchTerm, setSearchTerm] = React.useState("")
 
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = users.filter(user => {
+    const term = searchTerm.toLowerCase();
+    const nameMatch = user.name ? user.name.toLowerCase().includes(term) : false;
+    const emailMatch = user.email ? user.email.toLowerCase().includes(term) : false;
+    return nameMatch || emailMatch;
+  });
 
   return (
     <Card>
