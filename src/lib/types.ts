@@ -16,6 +16,10 @@ export interface User {
   attendanceDays?: number;
   absenceDays?: number;
   directManagerId?: string; // userId of direct manager
+  jobTitle?: string;
+  joinedAt?: any; // Firestore Timestamp
+  vacationDays?: number;
+  employeeId?: string;
 }
 
 export interface Client {
@@ -32,7 +36,10 @@ export interface Client {
 
   registeredBy: string; // userId of who created the entry (can be admin or moderator)
   registeredAt: any; // Firestore Timestamp
+  createdAt?: any; // Firestore Timestamp
+  updatedAt?: any; // Firestore Timestamp
   basicInfo?: {
+    name?: string;
     email?: string;
     address?: string;
     notes?: string;
@@ -61,6 +68,8 @@ export interface Client {
   creativeStatus?: 'in_progress' | 'completed' | 'cancelled';
   creativeNotes?: string;
   contentCalendar?: CalendarEntry[];
+  writingResponsible?: string; // userId of creative or content writer
+  assignedCreative?: string; // userId of assigned creative (set by PR)
 
   // Content Fields
   contentStatus?: 'pending' | 'in_progress' | 'completed';
@@ -286,4 +295,14 @@ export interface ActivityLogEntry {
   timestamp: any;
   activity: string;
   userId: string;
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: 'status_change' | 'new_client' | 'agreement_approved' | 'appointment' | 'task';
+  message: string;
+  relatedClientId?: string;
+  read: boolean;
+  createdAt: { seconds: number; nanoseconds: number };
 }

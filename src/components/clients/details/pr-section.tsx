@@ -1,14 +1,14 @@
 "use client";
 
-import { Client } from "@/lib/types";
+import { Client, User } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Check, MoreVertical, PlusCircle, X } from "lucide-react";
+import { Calendar, Check, MoreVertical, PlusCircle, UserCircle, X } from "lucide-react";
 import { formatTimestamp } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useFirestore, useMemoFirebase } from "@/firebase";
-import { doc } from "firebase/firestore";
+import { useFirestore, useMemoFirebase, useCollection } from "@/firebase";
+import { collection, doc, query, where } from "firebase/firestore";
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { ApproveClientDialog } from "./approve-client-dialog";
 import { AddAppointmentDialog } from "./add-appointment-dialog";
@@ -20,6 +20,14 @@ export function PRSection({ client }: { client: Client }) {
         if (!firestore) return null;
         return doc(firestore, 'clients', client.id);
     }, [firestore, client.id]);
+
+    // Fetch all users with 'creative' role
+    const creativesQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, "users"), where("role", "==", "creative"));
+    }, [firestore]);
+
+    const { data: creativeUsers } = useCollection<User>(creativesQuery);
 
     const handleStatusChange = (status: string) => {
         if (clientRef) {
@@ -33,6 +41,12 @@ export function PRSection({ client }: { client: Client }) {
         }
     }
 
+    const handleAssignCreative = (userId: string) => {
+        if (clientRef) {
+            updateDocumentNonBlocking(clientRef, { assignedCreative: userId });
+        }
+    }
+
 
     return (
         <Card>
@@ -41,6 +55,29 @@ export function PRSection({ client }: { client: Client }) {
                 <CardDescription>إدارة حالة العميل، المواعيد، وعمليات التحويل.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
+                {/* Assigned Creative Selector */}
+                <div className="flex items-center gap-3">
+                    <UserCircle className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex-1">
+                        <label className="text-sm font-medium mb-2 block">الكاتب الإبداعي المعين</label>
+                        <Select
+                            value={client.assignedCreative || ""}
+                            onValueChange={handleAssignCreative}
+                        >
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="اختر الكاتب الإبداعي" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {creativeUsers?.map((user) => (
+                                    <SelectItem key={user.id} value={user.id}>
+                                        {user.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
                 <div className="flex items-center justify-between">
                     <p><strong>حالة PR:</strong> {client.prStatus || 'pending'}</p>
                     <Dialog>

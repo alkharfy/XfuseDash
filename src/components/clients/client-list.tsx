@@ -67,7 +67,11 @@ const filterClients = (clients: Client[], role: UserRole, userId: string, tab: s
             filtered = clients.filter(c => c.serviceRequests.marketResearch && c.transferStatus === 'approved');
             break;
         case 'creative':
-            filtered = clients.filter(c => c.serviceRequests.creative && c.transferStatus === 'approved');
+            // Show clients assigned to this creative user OR clients with creative service request
+            filtered = clients.filter(c =>
+                (c.assignedCreative === userId || c.serviceRequests.creative) &&
+                c.transferStatus === 'approved'
+            );
             break;
         case 'content':
             filtered = clients.filter(c => c.serviceRequests.content && c.creativeStatus === 'completed' && c.transferStatus === 'approved');

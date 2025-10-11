@@ -55,8 +55,8 @@ service cloud.firestore {
      */
     match /users/{userId} {
       allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow get: if isOwner(userId);
-      allow list: if false;
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
     }
@@ -74,8 +74,8 @@ service cloud.firestore {
     match /clients/{clientId} {
       allow get, list: if true;
       allow create: if isSignedIn() && request.resource.data.registeredBy == request.auth.uid;
-      allow update: if isSignedIn() && resource != null && resource.data.registeredBy == request.auth.uid;
-      allow delete: if isSignedIn() && resource != null && resource.data.registeredBy == request.auth.uid;
+      allow update: if isSignedIn();
+      allow delete: if isSignedIn();
     }
 
     /**

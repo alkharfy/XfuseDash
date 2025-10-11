@@ -8,8 +8,12 @@ import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { IdeaDialog } from "./idea-dialog";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, UserCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, doc } from "firebase/firestore";
+import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 const approvalStatusVariantMap: { [key: string]: "default" | "secondary" | "destructive" | "outline" } = {
     draft: "outline",
@@ -36,7 +40,16 @@ export function CreativeSection({ client }: { client: Client }) {
     const [date, setDate] = useState<Date | undefined>(new Date());
     const [selectedIdea, setSelectedIdea] = useState<CalendarEntry | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    
+
+    const firestore = useFirestore();
+    const usersCollection = useMemoFirebase(() => collection(firestore, "users"), [firestore]);
+    const { data: users } = useCollection(usersCollection);
+
+    // Filter users with 'creative' or 'content' roles
+    const writingUsers = users?.filter(user =>
+        user.role === 'creative' || user.role === 'content'
+    ) || [];
+
     const calendarEntries = client.contentCalendar || [];
 
     const ideasForSelectedDate = date 
@@ -53,13 +66,43 @@ export function CreativeSection({ client }: { client: Client }) {
         setIsDialogOpen(true);
     }
 
+    const handleWritingResponsibleChange = async (userId: string) => {
+        const clientRef = doc(firestore, "clients", client.id);
+        await updateDocumentNonBlocking(clientRef, {
+            writingResponsible: userId
+        });
+    }
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle>قسم الإبداع</CardTitle>
                 <CardDescription>إدارة تقويم المحتوى وجدولة الأفكار الإبداعية.</CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-6 md:grid-cols-2">
+            <CardContent className="space-y-6">
+                <div className="flex items-center gap-3">
+                    <UserCircle className="h-5 w-5 text-muted-foreground" />
+                    <div className="flex-1">
+                        <label className="text-sm font-medium mb-2 block">المسؤول عن الكتابة</label>
+                        <Select
+                            value={client.writingResponsible || ""}
+                            onValueChange={handleWritingResponsibleChange}
+                        >
+                            <SelectTrigger className="w-full">
+                                <SelectValue placeholder="اختر المسؤول عن الكتابة" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {writingUsers.map((user) => (
+                                    <SelectItem key={user.id} value={user.id}>
+                                        {user.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                <div className="grid gap-6 md:grid-cols-2">
                 <div className="flex justify-center">
                     <Calendar
                         mode="single"
@@ -97,6 +140,7 @@ export function CreativeSection({ client }: { client: Client }) {
                             <p className="text-sm text-center text-muted-foreground pt-4">لا توجد أفكار لهذا اليوم.</p>
                         )}
                     </div>
+                </div>
                 </div>
             </CardContent>
 
