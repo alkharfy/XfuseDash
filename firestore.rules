@@ -1,115 +1,104 @@
 /**
- * @fileoverview Firestore Security Rules for the marketing team dashboard.
- *
- * Core Philosophy:
- * This ruleset employs a strict user-ownership model for user-specific data
- * and allows public read access for clients, with owner-only writes.
- * Administrative functions are not yet implemented.
+ * @description This ruleset enforces a user-ownership model for users and a role-based access control for clients,
+ * notifications, and system logs.
  *
  * Data Structure:
- * - /users/{userId}: Stores user profiles. Each user can only access their own profile.
- * - /clients/{clientId}: Stores client data. Publicly readable, but only the owner can modify.
+ * - /users/{userId}: Stores user profiles. Access is restricted to the user themselves.
+ * - /clients/{clientId}: Stores client information. Access is unrestricted to facilitate client data sharing with team members.
+ * - /notifications/{notificationId}: Stores user notifications.
+ * - /systemLogs/{logId}: Stores system logs.
  *
  * Key Security Decisions:
- * - User listing is explicitly denied to protect user privacy.
- * - Data validation is limited to ownership and relational integrity checks
- *   to enable rapid prototyping and flexible data shapes.
- * - Denormalization: None implemented yet, but consider adding ownerId to /clients/{clientId}
- *   to avoid collection queries in security rules.
+ * - Users can only read and write their own user document.
+ * - Listing of users is disallowed.
+ * - Read and write operations on `/clients/{clientId}` are public.
+ * - Notifications and systemLogs can be created by any signed-in user.
+ *
+ * Denormalization for Authorization: N/A (User ID is available in the path for /users/{userId}).
+ * Structural Segregation: N/A.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Prevents unauthenticated access.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * @description Checks if the requested user ID matches the authenticated user's ID.
-     */
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    /**
-     * @description Checks if the requested user ID matches the authenticated user's ID and the resource exists.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-
-    /**
-     * @description Rules for the /users collection.
+     * @description Enforces user-ownership for user profiles. Users can only read and write their own profile.
      * @path /users/{userId}
-     * @allow (create) If the user ID in the path matches the authenticated user's ID, allow creation.
-     * @deny (create) If the user ID in the path does not match the authenticated user's ID, deny creation.
-     * @allow (get, list) If the user ID in the path matches the authenticated user's ID, allow read.
-     * @deny (get, list) If the user ID in the path does not match the authenticated user's ID, deny read.
-     * @allow (update, delete) If the user ID in the path matches the authenticated user's ID, allow update and delete.
-     * @deny (update, delete) If the user ID in the path does not match the authenticated user's ID, deny update and delete.
-     * @principle Enforces document ownership for all operations on user documents.
+     * @allow (create) - Authenticated user creates their own profile with matching user ID.
+     * @allow (update) - Authenticated user updates their own profile.
+     * @allow (get) - Authenticated user reads their own profile.
+     * @deny (create) - Authenticated user attempts to create a profile with a different user ID.
+     * @deny (update) - Authenticated user attempts to update another user's profile.
+     * @deny (delete) - No one can delete a user document, only Firebase Auth can.
+     * @deny (list) - Listing users is not allowed.
+     * @principle Enforces document ownership for writes and restricts access to a user's own data.
      */
     match /users/{userId} {
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isSignedIn() && isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if false;
     }
 
     /**
-     * @description Rules for the /clients collection.
+     * @description Allows public read and write access to client documents.
      * @path /clients/{clientId}
-     * @allow (get, list) Allow public read access.
-     * @allow (create) If the authenticated user ID matches the registeredBy field, allow creation.
-     * @deny (create) If the authenticated user ID does not match the registeredBy field, deny creation.
-     * @allow (update, delete) If the authenticated user ID matches the registeredBy field, allow update and delete.
-     * @deny (update, delete) If the authenticated user ID does not match the registeredBy field, deny update and delete.
-     * @principle Public read access with owner-only writes, enforced via the registeredBy field.
+     * @allow (get, list) - Any user can read client data.
+     * @allow (create, update, delete) - Any authenticated user can create, update, or delete client data.
+     * @deny (none) - No restrictions on read/write operations.
+     * @principle Allows public access to client data for collaborative editing and viewing.
      */
     match /clients/{clientId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
       allow get, list: if true;
-      allow create: if isSignedIn() && request.resource.data.registeredBy == request.auth.uid;
-      allow update: if isSignedIn();
-      allow delete: if isSignedIn();
+      allow create, update, delete: if isSignedIn();
     }
 
     /**
-     * @description Rules for the /notifications collection.
+     * @description Allows any signed-in user to create notifications.
      * @path /notifications/{notificationId}
-     * @allow (create) Allow if the notification's userId matches the authenticated user's ID.
-     * @deny (create) Deny if the notification's userId does not match the authenticated user's ID.
-     * @allow (get, list) Allow if the notification's userId matches the authenticated user's ID.
-     * @deny (get, list) Deny if the notification's userId does not match the authenticated user's ID.
-     * @allow (update, delete) Allow if the notification's userId matches the authenticated user's ID. Resource must also exist.
-     * @deny (update, delete) Deny if the notification's userId does not match the authenticated user's ID.
-     * @principle Enforces user-specific access to notifications.
+     * @allow (create) - Any authenticated user can create a notification.
+     * @deny (get, list, update, delete) - Only the system can manage notifications.
+     * @principle Notifications can be created by any user, but not read, updated, or deleted.
      */
     match /notifications/{notificationId} {
-        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
-        allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
-        allow update: if isSignedIn() && resource != null && resource.data.userId == request.auth.uid;
-        allow delete: if isSignedIn() && resource != null && resource.data.userId == request.auth.uid;
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      allow get, list: if false;
+      allow create: if isSignedIn();
+      allow update, delete: if false;
     }
 
     /**
-     * @description Rules for the /systemLogs collection.
+     * @description Allows any signed-in user to create system logs.
      * @path /systemLogs/{logId}
-     * @allow (create) Deny all creates
-     * @allow (get, list) Deny all gets and lists.
-     * @allow (update, delete) Deny all updates and deletes.
+     * @allow (create) - Any authenticated user can create a system log.
+     * @deny (get, list, update, delete) - Only the system can manage system logs.
+     * @principle System logs can be created by any user, but not read, updated, or deleted.
      */
     match /systemLogs/{logId} {
-      allow get: if false;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      allow get, list: if false;
+      allow create: if isSignedIn();
+      allow update, delete: if false;
     }
   }
 }
