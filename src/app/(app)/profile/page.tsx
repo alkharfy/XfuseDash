@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -81,11 +81,17 @@ export default function ProfilePage() {
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
-    values: {
-      phone: appUser?.phone || "",
-      address: appUser?.address || "",
-    },
   });
+
+  useEffect(() => {
+    if (appUser) {
+      form.reset({
+        phone: appUser.phone || "",
+        address: appUser.address || "",
+      });
+    }
+  }, [appUser, form]);
+
 
   const onSubmit = (values: z.infer<typeof profileSchema>) => {
     if (!userDocRef) return;
@@ -351,3 +357,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
