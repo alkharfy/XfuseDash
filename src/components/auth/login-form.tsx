@@ -88,7 +88,7 @@ export function LoginForm() {
   };
 
   return (
-    <>
+    <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
       <Card className="w-full">
         <CardHeader>
           <CardTitle className="font-headline">تسجيل الدخول</CardTitle>
@@ -122,7 +122,7 @@ export function LoginForm() {
                       </FormControl>
                        <div className="text-right">
                          <DialogTrigger asChild>
-                            <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setIsResetDialogOpen(true)}>
+                            <Button variant="link" size="sm" className="h-auto p-0 text-xs">
                                 نسيت كلمة المرور؟
                             </Button>
                          </DialogTrigger>
@@ -161,40 +161,38 @@ export function LoginForm() {
         </CardFooter>
       </Card>
       
-      <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>إعادة تعيين كلمة المرور</DialogTitle>
-                <DialogDescription>أدخل بريدك الإلكتروني المسجل لإرسال رابط إعادة التعيين.</DialogDescription>
-            </DialogHeader>
-            <Form {...resetForm}>
-                <form onSubmit={resetForm.handleSubmit(onResetSubmit)} className="space-y-4">
-                    <FormField
-                        control={resetForm.control}
-                        name="email"
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>البريد الإلكتروني</FormLabel>
-                                <FormControl>
-                                    <Input {...field} type="email" placeholder="email@example.com" disabled={isResetting} />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <DialogFooter>
-                        <DialogClose asChild>
-                            <Button type="button" variant="ghost">إلغاء</Button>
-                        </DialogClose>
-                        <Button type="submit" disabled={isResetting}>
-                            {isResetting && <Loader2 className="ms-2 h-4 w-4 animate-spin" />}
-                            إرسال الرابط
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </Form>
-        </DialogContent>
-      </Dialog>
-    </>
+      <DialogContent>
+          <DialogHeader>
+              <DialogTitle>إعادة تعيين كلمة المرور</DialogTitle>
+              <DialogDescription>أدخل بريدك الإلكتروني المسجل لإرسال رابط إعادة التعيين.</DialogDescription>
+          </DialogHeader>
+          <Form {...resetForm}>
+              <form onSubmit={resetForm.handleSubmit(onResetSubmit)} className="space-y-4">
+                  <FormField
+                      control={resetForm.control}
+                      name="email"
+                      render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>البريد الإلكتروني</FormLabel>
+                              <FormControl>
+                                  <Input {...field} type="email" placeholder="email@example.com" disabled={isResetting} />
+                              </FormControl>
+                              <FormMessage />
+                          </FormItem>
+                      )}
+                  />
+                  <DialogFooter>
+                      <DialogClose asChild>
+                          <Button type="button" variant="ghost">إلغاء</Button>
+                      </DialogClose>
+                      <Button type="submit" disabled={isResetting}>
+                          {isResetting && <Loader2 className="ms-2 h-4 w-4 animate-spin" />}
+                          إرسال الرابط
+                      </Button>
+                  </DialogFooter>
+              </form>
+          </Form>
+      </DialogContent>
+    </Dialog>
   );
 }
