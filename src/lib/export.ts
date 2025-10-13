@@ -1,8 +1,16 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { amiriFont } from './amiri-font'; // Import the font
 
-// Excel Export
+// Extend jsPDF with the autoTable plugin
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+  }
+}
+
+// Excel Export (No changes needed here)
 export function exportToExcel(data: any[], filename: string = 'report') {
   const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();
@@ -11,34 +19,52 @@ export function exportToExcel(data: any[], filename: string = 'report') {
   XLSX.writeFile(workbook, `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 
-// PDF Export (with basic Arabic support)
+// PDF Export (Updated to support Arabic)
 export function exportToPDF(data: any[], filename: string = 'report', title: string = 'Report') {
   const doc = new jsPDF();
 
-  // You need to add a font that supports Arabic characters
-  // This is a complex topic. For a simple solution, we can try to use a base64 encoded font,
-  // but for a robust solution, a library like `jspdf-arabic` might be needed.
-  // For this example, we'll assume basic rendering might work for some viewers, but it's not guaranteed.
-  
+  // 1. Add the font to the virtual file system
+  doc.addFileToVFS('Amiri-Regular.ttf', amiriFont);
+  // 2. Add the font to jsPDF
+  doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal');
+  // 3. Set the font for the entire document
+  doc.setFont('Amiri');
+
+  // Reverse the title for RTL display
+  const rtlTitle = title.split('').reverse().join('');
   doc.setFontSize(18);
-  // To display Arabic correctly, text should be reversed and handled properly.
-  // This is a placeholder for the title.
-  doc.text(title, 105, 20, { align: 'center' });
+  doc.text(rtlTitle, 105, 20, { align: 'center' });
   
-  const tableData = data.map(item => Object.values(item));
-  const headers = Object.keys(data[0] || {});
+  if (!data || data.length === 0) {
+    doc.setFontSize(12);
+    const noDataText = 'لا توجد بيانات للتصدير.';
+    doc.text(noDataText.split('').reverse().join(''), 105, 40, { align: 'center' });
+    doc.save(`${filename}_${new Date().toISOString().split('T')[0]}.pdf`);
+    return;
+  }
+
+  const tableData = data.map(item => Object.values(item).map(val => String(val).split('').reverse().join('')));
+  const headers = Object.keys(data[0]).map(h => h.split('').reverse().join(''));
   
-  (doc as any).autoTable({
+  doc.autoTable({
     head: [headers],
     body: tableData,
     startY: 30,
-    // Add styles for RTL, though this is limited in jspdf-autotable
+    theme: 'grid',
     styles: {
-      halign: 'right', // Align text to the right for Arabic
+      font: 'Amiri', // Apply the font to the table
+      halign: 'right', // Align text to the right
+      cellPadding: 2,
+      fontSize: 10,
     },
     headStyles: {
-      fillColor: [63, 81, 181] // Primary color
-    }
+      fillColor: [41, 128, 185], // A nice blue color
+      textColor: 255,
+      fontStyle: 'bold',
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245],
+    },
   });
   
   doc.save(`${filename}_${new Date().toISOString().split('T')[0]}.pdf`);
