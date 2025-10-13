@@ -9,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 import { useAuthStore } from '@/hooks/use-auth';
 import { doc } from 'firebase/firestore';
 import type { User as AppUser } from '@/lib/types';
+import BottomNavBar from '@/components/layout/bottom-nav-bar';
 
 
 export default function AppLayout({
@@ -52,9 +53,10 @@ export default function AppLayout({
       <SidebarNav />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 pb-20 md:pb-8">
           {children}
         </main>
+        <BottomNavBar />
       </div>
     </div>
   );
