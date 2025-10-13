@@ -62,7 +62,7 @@ export default function UsersPage() {
                             <Download className="h-4 w-4" /> تصدير CSV
                         </Button>
                         <div className="ms-auto" />
-                        <Button size="sm" variant="primary">
+                        <Button size="sm" variant="default">
                             <PlusCircle className="h-4 w-4" /> إضافة مستخدم
                         </Button>
                     </div>

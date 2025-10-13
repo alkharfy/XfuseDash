@@ -89,10 +89,10 @@ export function LoginForm() {
 
   return (
     <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-      <Card className="w-full">
+      <Card className="w-full bg-gradient-to-r from-pink-500 to-purple-500">
         <CardHeader>
-          <CardTitle className="font-headline">تسجيل الدخول</CardTitle>
-          <CardDescription>أدخل بياناتك للوصول إلى لوحة التحكم</CardDescription>
+          <CardTitle className="font-headline text-white text-center">تسجيل الدخول</CardTitle>
+          <CardDescription className="text-white text-center">أدخل بياناتك للوصول إلى لوحة التحكم</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...loginForm}>
@@ -105,7 +105,7 @@ export function LoginForm() {
                     <FormItem>
                       <FormLabel>البريد الإلكتروني</FormLabel>
                       <FormControl>
-                        <Input {...field} type="email" placeholder="email@example.com" disabled={isPending} />
+                        <Input {...field} type="email" placeholder="email@example.com" disabled={isPending} className="rounded-lg bg-white" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -118,11 +118,11 @@ export function LoginForm() {
                     <FormItem>
                       <FormLabel>كلمة المرور</FormLabel>
                       <FormControl>
-                        <Input {...field} type="password" placeholder="********" disabled={isPending} />
+                        <Input {...field} type="password" placeholder="********" disabled={isPending} className="rounded-lg bg-white" />
                       </FormControl>
                        <div className="text-right">
                          <DialogTrigger asChild>
-                            <Button variant="link" size="sm" className="h-auto p-0 text-xs">
+                            <Button variant="link" size="sm" className="h-auto p-0 text-xs text-white">
                                 نسيت كلمة المرور؟
                             </Button>
                          </DialogTrigger>
@@ -141,7 +141,7 @@ export function LoginForm() {
                 </Alert>
               )}
 
-              <Button type="submit" className="w-full" disabled={isPending}>
+              <Button type="submit" className="w-full bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700" disabled={isPending}>
                 {isPending && <Loader2 className="ms-2 h-4 w-4 animate-spin" />}
                 تسجيل الدخول
               </Button>
@@ -153,14 +153,13 @@ export function LoginForm() {
             ليس لديك حساب؟{' '}
             <Link
               href="/register"
-              className="underline underline-offset-4 hover:text-primary"
+              className="underline underline-offset-4 hover:text-primary text-white"
             >
               إنشاء حساب
             </Link>
           </p>
         </CardFooter>
       </Card>
-      
       <DialogContent>
           <DialogHeader>
               <DialogTitle>إعادة تعيين كلمة المرور</DialogTitle>
@@ -175,7 +174,7 @@ export function LoginForm() {
                           <FormItem>
                               <FormLabel>البريد الإلكتروني</FormLabel>
                               <FormControl>
-                                  <Input {...field} type="email" placeholder="email@example.com" disabled={isResetting} />
+                                  <Input {...field} type="email" placeholder="email@example.com" disabled={isResetting} className="rounded-lg bg-white" />
                               </FormControl>
                               <FormMessage />
                           </FormItem>
@@ -183,9 +182,9 @@ export function LoginForm() {
                   />
                   <DialogFooter>
                       <DialogClose asChild>
-                          <Button type="button" variant="ghost">إلغاء</Button>
+                          <Button type="button" variant="ghost" className="text-white">إلغاء</Button>
                       </DialogClose>
-                      <Button type="submit" disabled={isResetting}>
+                      <Button type="submit" disabled={isResetting} className="bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 text-white">
                           {isResetting && <Loader2 className="ms-2 h-4 w-4 animate-spin" />}
                           إرسال الرابط
                       </Button>

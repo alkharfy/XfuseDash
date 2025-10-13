@@ -6,7 +6,7 @@ import { getSummaryForResearchFile } from "@/app/actions";
 import { useAuthStore } from "@/hooks/use-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { File, Loader2, Sparkles, Upload } from "lucide-react";
+import { Download, File, Loader2, Sparkles, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -182,12 +182,12 @@ export function MarketResearchSection({ client }: { client: Client }) {
                 <CardDescription>رفع ملفات البحث وتوليد ملخصات تلقائية.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                {(role === 'market_researcher' || role === 'moderator') && (
+                {(role === 'market_researcher' || role === 'moderator' || role === 'admin') && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {fileCategories.map(category => (
-                            <FileUploadArea 
+                            <FileUploadArea
                                 key={category}
-                                category={category} 
+                                category={category}
                                 label={categoryTranslations[category]}
                                 clientId={client.id}
                             />
@@ -195,22 +195,54 @@ export function MarketResearchSection({ client }: { client: Client }) {
                     </div>
                 )}
 
+                {/* عرض الملفات لجميع المستخدمين */}
                 <div>
                     <h4 className="font-semibold mb-2">الملفات المرفوعة</h4>
                     <div className="space-y-2">
                         {client.marketResearchFiles?.length ? client.marketResearchFiles.map((file, index) => (
-                            <div key={index} className="flex items-center justify-between p-2 rounded-md border">
-                                <div className="flex items-center gap-2">
-                                    <File className="h-4 w-4 text-muted-foreground" />
-                                    <span>{file.fileName}</span>
-                                    {file.category && <span className="text-xs text-muted-foreground">({categoryTranslations[file.category] || file.category})</span>}
+                            <div key={index} className="flex items-center justify-between p-3 rounded-md border bg-card hover:bg-accent/50 transition-colors">
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    <File className="h-5 w-5 text-primary flex-shrink-0" />
+                                    <div className="flex flex-col gap-1 flex-1 min-w-0">
+                                        <a
+                                            href={file.fileUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline truncate block"
+                                            title={file.fileName}
+                                        >
+                                            {file.fileName}
+                                        </a>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            {file.category && (
+                                                <span className="bg-primary/10 px-2 py-0.5 rounded">
+                                                    {categoryTranslations[file.category] || file.category}
+                                                </span>
+                                            )}
+                                            {file.uploadedAt && (
+                                                <span>
+                                                    {new Date(file.uploadedAt.seconds * 1000).toLocaleDateString('ar-SA')}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                                {(role === 'market_researcher' || role === 'moderator' || role === 'creative') && (
-                                    <Button size="sm" onClick={() => handleSummarize(file.fileName)} disabled={isSummarizing}>
-                                        {isSummarizing ? <Loader2 className="ms-2 h-4 w-4 animate-spin"/> : <Sparkles className="ms-2 h-4 w-4"/>}
-                                        تلخيص
-                                    </Button>
-                                )}
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    <a
+                                        href={file.fileUrl}
+                                        download
+                                        className="text-muted-foreground hover:text-foreground"
+                                        title="تحميل الملف"
+                                    >
+                                        <Download className="h-4 w-4" />
+                                    </a>
+                                    {(role === 'market_researcher' || role === 'moderator' || role === 'creative') && (
+                                        <Button size="sm" variant="ghost" onClick={() => handleSummarize(file.fileName)} disabled={isSummarizing}>
+                                            {isSummarizing ? <Loader2 className="ms-2 h-4 w-4 animate-spin"/> : <Sparkles className="ms-2 h-4 w-4"/>}
+                                            تلخيص
+                                        </Button>
+                                    )}
+                                </div>
                             </div>
                         )) : <p className="text-sm text-muted-foreground">لا توجد ملفات مرفوعة.</p>}
                     </div>

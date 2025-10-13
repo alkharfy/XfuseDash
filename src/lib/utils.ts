@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { format } from "date-fns"
+import { format, formatDistanceToNowStrict } from "date-fns"
 import { ar } from "date-fns/locale"
 
 export function cn(...inputs: ClassValue[]) {
@@ -19,3 +19,9 @@ export function formatShortDate(timestamp: any): string {
     const date = timestamp.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp);
     return format(date, 'dd/MM/yyyy', { locale: ar });
 }
+
+export function formatRelativeDate(date: Date): string {
+    return formatDistanceToNowStrict(date, { addSuffix: true, locale: ar });
+}
+
+    

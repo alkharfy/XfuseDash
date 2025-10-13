@@ -207,6 +207,7 @@ export interface LeadInfo {
   lastContactDate?: any;
   pipelineStage?: 'new' | 'qualified' | 'proposal_sent' | 'negotiation' | 'won' | 'lost' | 'on_hold';
   lostReason?: string;
+  website?: string;
 }
 
 export interface ScopeOfWork {

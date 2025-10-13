@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAuthStore } from "@/hooks/use-auth";
 import StatCard from "@/components/dashboard/stat-card";
 import { Client, UserRole } from "@/lib/types";
-import { BarChart, Briefcase, CheckCircle, Clock, Users, Zap, Loader2, Home, Filter, RefreshCw, Download } from "lucide-react";
+import { BarChart, Briefcase, CheckCircle, Clock, Users, Zap, Loader2, Home, Filter, RefreshCw, Download, ListTodo } from "lucide-react";
 import ClientList from "@/components/clients/client-list";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query } from "firebase/firestore";
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { formatRelativeDate } from "@/lib/utils";
 
 const getStatsForRole = (role: UserRole, userId: string, clients: Client[] | null) => {
   if (!clients) {
@@ -63,6 +64,79 @@ const getStatsForRole = (role: UserRole, userId: string, clients: Client[] | nul
   }
 };
 
+const getTasksForRole = (role: UserRole, userId: string, clients: Client[] | null) => {
+    if (!clients) return [];
+  
+    const now = new Date();
+    let tasks: any[] = [];
+  
+    switch (role) {
+      case 'pr':
+        clients.forEach(c => {
+          if (c.assignedToPR === userId) {
+            c.prAppointments?.forEach(appt => {
+              if (appt.status === 'scheduled' && new Date(appt.date.seconds * 1000) >= now) {
+                tasks.push({
+                  title: `موعد مكالمة مع ${c.name}`,
+                  clientName: c.name,
+                  dueDate: new Date(appt.date.seconds * 1000),
+                  link: `/clients/${c.id}`,
+                  status: 'scheduled',
+                });
+              }
+            });
+          }
+        });
+        break;
+  
+      case 'market_researcher':
+        clients.forEach(c => {
+          if (c.serviceRequests?.marketResearch && c.researchStatus !== 'completed') {
+            tasks.push({
+              title: `إجراء بحث سوقي`,
+              clientName: c.name,
+              dueDate: null,
+              link: `/clients/${c.id}`,
+              status: c.researchStatus || 'pending',
+            });
+          }
+        });
+        break;
+  
+      case 'creative':
+        clients.forEach(c => {
+          if ((c.assignedCreative === userId || c.serviceRequests?.creative) && c.creativeStatus !== 'completed') {
+            tasks.push({
+              title: `العمل على الجانب الإبداعي`,
+              clientName: c.name,
+              dueDate: null,
+              link: `/clients/${c.id}`,
+              status: c.creativeStatus || 'pending',
+            });
+          }
+        });
+        break;
+  
+      case 'content':
+        clients.forEach(c => {
+          c.contentTasks?.forEach(task => {
+            if (task.assignedTo === userId && task.status !== 'completed') {
+              tasks.push({
+                title: task.title,
+                clientName: c.name,
+                dueDate: new Date(task.dueDate.seconds * 1000),
+                link: `/clients/${c.id}`,
+                status: task.status,
+              });
+            }
+          });
+        });
+        break;
+    }
+  
+    return tasks.sort((a, b) => (a.dueDate || Infinity) - (b.dueDate || Infinity));
+  };
+
 export default function DashboardPage() {
   const { user, role } = useAuthStore();
   const firestore = useFirestore();
@@ -77,6 +151,7 @@ export default function DashboardPage() {
   if (!user || !role) return null;
 
   const stats = getStatsForRole(role, user.uid, clients);
+  const tasks = getTasksForRole(role, user.uid, clients);
 
   const recentClients = clients
     ? [...clients]
@@ -144,26 +219,73 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* أحدث العملاء — نحافظ على الشرط والمنطق */}
-      {role === "moderator" && (
+      <div className="grid gap-6 lg:grid-cols-2">
+         {/* مهامي القادمة */}
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xl font-headline">أحدث العملاء</CardTitle>
-          </CardHeader>
-          <CardContent>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl font-headline">
+                    <ListTodo className="text-primary" />
+                    مهامي القادمة
+                </CardTitle>
+            </CardHeader>
+            <CardContent>
             {isLoading ? (
               <div className="flex justify-center items-center h-64">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
+            ) : tasks.length > 0 ? (
+                <ScrollArea className="h-[60vh] pe-2">
+                    <div className="space-y-3">
+                        {tasks.map((task, index) => (
+                            <Link key={index} href={task.link} className="block p-3 border rounded-lg hover:bg-muted transition-colors">
+                                <div className="flex justify-between items-center">
+                                    <p className="font-medium">{task.title}</p>
+                                    <Badge variant="secondary" className="text-xs">{task.clientName}</Badge>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                    <Clock className="h-3 w-3" />
+                                    <span>{task.dueDate ? formatRelativeDate(task.dueDate) : "غير محدد"}</span>
+                                    <Separator orientation="vertical" className="h-4" />
+                                    <span>الحالة: {task.status}</span>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                </ScrollArea>
             ) : (
-              <ScrollArea className="h-[60vh] pe-2">
-                {/* لا نغيّر أي props جوهرية */}
-                <ClientList isPaginated={false} />
-              </ScrollArea>
+                <div className="flex flex-col items-center justify-center h-64 text-center">
+                    <CheckCircle className="h-12 w-12 text-green-500 mb-2" />
+                    <p className="font-medium">لا توجد مهام قادمة!</p>
+                    <p className="text-sm text-muted-foreground">كل شيء منجز حتى الآن.</p>
+                </div>
             )}
-          </CardContent>
+            </CardContent>
         </Card>
-      )}
+
+        {/* أحدث العملاء — نحافظ على الشرط والمنطق */}
+        {role === "moderator" && (
+            <Card>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-xl font-headline">أحدث العملاء</CardTitle>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+                ) : (
+                <ScrollArea className="h-[60vh] pe-2">
+                    {/* لا نغيّر أي props جوهرية */}
+                    <ClientList isPaginated={false} />
+                </ScrollArea>
+                )}
+            </CardContent>
+            </Card>
+        )}
+      </div>
+
     </div>
   );
 }
+
+    
