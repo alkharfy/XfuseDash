@@ -218,7 +218,7 @@ export const columns: ColumnDef<User>[] = [
         cell: ({ row }) => (
             <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8">
-                    <AvatarImage src={row.original.avatarUrl} alt={row.original.name} />
+                    <AvatarImage src={row.original.photoURL} alt={row.original.name} />
                     <AvatarFallback>{getInitials(row.original.name)}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">

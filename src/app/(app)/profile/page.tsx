@@ -64,6 +64,7 @@ export default function ProfilePage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [courses, setCourses] = useState<string[]>([]);
 
   const userDocRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -89,6 +90,7 @@ export default function ProfilePage() {
         phone: appUser.phone || "",
         address: appUser.address || "",
       });
+      setCourses(appUser.courses || []);
     }
   }, [appUser, form]);
 
@@ -178,7 +180,7 @@ export default function ProfilePage() {
       {/* رأس الصفحة */}
       <div className="relative flex flex-col items-center gap-3">
         <Avatar className="h-24 w-24 border-4 border-primary">
-          <AvatarImage src={appUser.avatarUrl} alt={appUser.name} />
+          <AvatarImage src={appUser.photoURL} alt={appUser.name} />
           <AvatarFallback className="text-3xl">{getInitials(appUser.name)}</AvatarFallback>
         </Avatar>
         <div className="text-center">
@@ -293,7 +295,7 @@ export default function ProfilePage() {
                 {manager ? (
                   <div className="flex items-center gap-3">
                     <Avatar>
-                      <AvatarImage src={manager.avatarUrl} alt={manager.name} />
+                      <AvatarImage src={manager.photoURL} alt={manager.name} />
                       <AvatarFallback>{getInitials(manager.name)}</AvatarFallback>
                     </Avatar>
                     <div>
@@ -339,10 +341,10 @@ export default function ProfilePage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {appUser.courses && appUser.courses.length > 0 ? (
+              {courses.length > 0 ? (
                 <ScrollArea className="h-56 pe-2">
                   <ul className="space-y-2 list-disc pr-5">
-                    {appUser.courses.map((course, i) => (
+                    {courses.map((course, i) => (
                       <li key={i}>{course}</li>
                     ))}
                   </ul>

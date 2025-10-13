@@ -8,7 +8,7 @@ export interface User {
   name: string;
   createdAt: any; // Firestore Timestamp
   active: boolean;
-  avatarUrl?: string;
+  photoURL?: string;
   phone?: string;
   address?: string;
   courses?: string[];
