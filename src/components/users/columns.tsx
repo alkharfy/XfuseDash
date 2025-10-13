@@ -5,7 +5,7 @@ import * as React from "react"
 import { ColumnDef } from "@tanstack/react-table"
 import { User, UserRole } from "@/lib/types"
 import { Button } from "@/components/ui/button"
-import { ArrowUpDown, MoreHorizontal, Edit, BookOpen, DollarSign, CalendarCheck, CalendarX } from "lucide-react"
+import { ArrowUpDown, MoreHorizontal, Edit, BookOpen, DollarSign, CalendarCheck, CalendarX, Loader2, Upload, Trash2 } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,10 +20,13 @@ import { z } from "zod"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { useFirestore, useMemoFirebase, updateDocumentNonBlocking } from "@/firebase"
+import { useFirestore, useFirebaseApp, updateDocumentNonBlocking } from "@/firebase"
 import { doc } from "firebase/firestore"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
+import { useUploadFile } from "@/hooks/use-storage"
+import { Progress } from "../ui/progress"
+import { updateProfile } from "firebase/auth" // This will only work for the current user, need a backend function for others
 
 const roleTranslations: Record<UserRole, string> = {
     admin: 'مدير',
@@ -35,6 +38,9 @@ const roleTranslations: Record<UserRole, string> = {
 };
 
 const userUpdateSchema = z.object({
+  name: z.string().min(3, "الاسم مطلوب."),
+  email: z.string().email("البريد الإلكتروني غير صالح."),
+  photoURL: z.string().optional(),
   salary: z.coerce.number().min(0, "الراتب يجب أن يكون رقمًا موجبًا").optional(),
   attendanceDays: z.coerce.number().int().min(0, "يجب أن يكون عددًا صحيحًا موجبًا").optional(),
   absenceDays: z.coerce.number().int().min(0, "يجب أن يكون عددًا صحيحًا موجبًا").optional(),
@@ -55,10 +61,21 @@ const UserActions = ({ user }: { user: User }) => {
     const firestore = useFirestore();
     const { toast } = useToast();
     const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+    const { uploadFile, progress, isUploading, error: uploadError } = useUploadFile();
+    const [newPhotoUrl, setNewPhotoUrl] = React.useState<string | null>(user.photoURL || null);
+
+    React.useEffect(() => {
+        if(uploadError) {
+            toast({ variant: 'destructive', title: 'فشل الرفع', description: uploadError.message });
+        }
+    }, [uploadError, toast]);
 
     const form = useForm<z.infer<typeof userUpdateSchema>>({
         resolver: zodResolver(userUpdateSchema),
         defaultValues: {
+            name: user.name || "",
+            email: user.email || "",
+            photoURL: user.photoURL || "",
             salary: user.salary || 0,
             attendanceDays: user.attendanceDays || 0,
             absenceDays: user.absenceDays || 0,
@@ -72,15 +89,34 @@ const UserActions = ({ user }: { user: User }) => {
         name: "courses"
     });
 
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const filePath = `user-avatars/${user.id}/${file.name}`;
+            const downloadURL = await uploadFile(filePath, file);
+            setNewPhotoUrl(downloadURL);
+            form.setValue('photoURL', downloadURL);
+        } catch (error) {
+            console.error("Failed to upload avatar:", error);
+        }
+    };
+
+
     const onSubmit = (values: z.infer<typeof userUpdateSchema>) => {
         if (!firestore) return;
         const userDocRef = doc(firestore, 'users', user.id);
         
         const dataToUpdate = {
             ...values,
-            courses: values.courses?.map(c => c.value).filter(Boolean) || []
+            courses: values.courses?.map(c => c.value).filter(Boolean) || [],
+            photoURL: newPhotoUrl || user.photoURL, // Use new photo if available
         };
         
+        // This is a simplified approach. Ideally, you would use a Cloud Function
+        // to update another user's auth profile (email, photoURL).
+        // For now, we only update Firestore.
         updateDocumentNonBlocking(userDocRef, dataToUpdate);
 
         toast({
@@ -119,6 +155,56 @@ const UserActions = ({ user }: { user: User }) => {
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto p-2">
+                        
+                        {/* Avatar Upload */}
+                        <FormItem>
+                            <FormLabel>الصورة الشخصية</FormLabel>
+                            <div className="flex items-center gap-4">
+                                <Avatar className="h-16 w-16">
+                                    <AvatarImage src={newPhotoUrl || user.photoURL} alt={user.name} />
+                                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                    <FormControl>
+                                        <Input id="avatar-upload" type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
+                                    </FormControl>
+                                    <Button asChild variant="outline">
+                                        <label htmlFor="avatar-upload" className="cursor-pointer">
+                                            <Upload className="h-4 w-4 ml-2"/>
+                                            تغيير الصورة
+                                        </label>
+                                    </Button>
+                                    {isUploading && <Progress value={progress} className="mt-2" />}
+                                </div>
+                            </div>
+                        </FormItem>
+
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           <FormField
+                                control={form.control}
+                                name="name"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>الاسم الكامل</FormLabel>
+                                    <FormControl><Input {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                             <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>البريد الإلكتروني</FormLabel>
+                                    <FormControl><Input type="email" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        </div>
+
                         <FormField
                             control={form.control}
                             name="role"
@@ -184,7 +270,9 @@ const UserActions = ({ user }: { user: User }) => {
                                     render={({ field }) => (
                                         <FormItem className="flex items-center gap-2 mb-2">
                                             <FormControl><Input {...field} placeholder={`دورة #${index + 1}`} /></FormControl>
-                                            <Button type="button" variant="ghost" size="sm" onClick={() => remove(index)}>إزالة</Button>
+                                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                                                <Trash2 className="w-4 h-4" />
+                                            </Button>
                                             <FormMessage />
                                         </FormItem>
                                     )}
@@ -199,7 +287,10 @@ const UserActions = ({ user }: { user: User }) => {
                             <DialogClose asChild>
                                 <Button type="button" variant="ghost">إلغاء</Button>
                             </DialogClose>
-                            <Button type="submit">حفظ التغييرات</Button>
+                            <Button type="submit" disabled={isUploading}>
+                                {isUploading && <Loader2 className="ms-2 h-4 w-4 animate-spin" />}
+                                حفظ التغييرات
+                            </Button>
                         </DialogFooter>
                     </form>
                 </Form>
