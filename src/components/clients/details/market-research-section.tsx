@@ -143,7 +143,7 @@ const FileUploadArea = ({
       ) : (
         <>
           <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-          <h4 className="font-semibold">ملف موجه لـ {label}</h4>
+          <h4 className="font-semibold text-sm sm:text-base">ملف موجه لـ {label}</h4>
           <Input type="file" className="hidden" id={inputId} onChange={handleFileChange} />
           <Button asChild variant="outline" size="sm">
             <label htmlFor={inputId}>تصفح الملفات</label>
@@ -200,7 +200,7 @@ export function MarketResearchSection({ client }: { client: Client }) {
                     <h4 className="font-semibold mb-2">الملفات المرفوعة</h4>
                     <div className="space-y-2">
                         {client.marketResearchFiles?.length ? client.marketResearchFiles.map((file, index) => (
-                            <div key={index} className="flex items-center justify-between p-3 rounded-md border bg-card hover:bg-accent/50 transition-colors">
+                            <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2 p-3 rounded-md border bg-card hover:bg-accent/50 transition-colors">
                                 <div className="flex items-center gap-3 flex-1 min-w-0">
                                     <File className="h-5 w-5 text-primary flex-shrink-0" />
                                     <div className="flex flex-col gap-1 flex-1 min-w-0">
@@ -227,16 +227,16 @@ export function MarketResearchSection({ client }: { client: Client }) {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 flex-shrink-0">
+                                <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-center">
                                     <a
                                         href={file.fileUrl}
                                         download
-                                        className="text-muted-foreground hover:text-foreground"
+                                        className="text-muted-foreground hover:text-foreground p-2"
                                         title="تحميل الملف"
                                     >
                                         <Download className="h-4 w-4" />
                                     </a>
-                                    {(role === 'market_researcher' || role === 'moderator' || role === 'creative') && (
+                                    {(role === 'market_researcher' || role === 'moderator' || role === 'creative' || role === 'admin') && (
                                         <Button size="sm" variant="ghost" onClick={() => handleSummarize(file.fileName)} disabled={isSummarizing}>
                                             {isSummarizing ? <Loader2 className="ms-2 h-4 w-4 animate-spin"/> : <Sparkles className="ms-2 h-4 w-4"/>}
                                             تلخيص

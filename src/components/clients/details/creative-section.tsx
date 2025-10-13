@@ -88,7 +88,7 @@ export function CreativeSection({ client }: { client: Client }) {
                             value={client.writingResponsible || ""}
                             onValueChange={handleWritingResponsibleChange}
                         >
-                            <SelectTrigger className="w-full">
+                            <SelectTrigger className="w-full md:w-[250px]">
                                 <SelectValue placeholder="اختر المسؤول عن الكتابة" />
                             </SelectTrigger>
                             <SelectContent>
@@ -113,7 +113,7 @@ export function CreativeSection({ client }: { client: Client }) {
                     />
                 </div>
                 <div className="space-y-4">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                         <h4 className="font-semibold">
                             الأفكار لـ: {date ? format(date, 'PPP', { locale: ar }) : ''}
                         </h4>
@@ -128,8 +128,8 @@ export function CreativeSection({ client }: { client: Client }) {
                                 <div key={idea.id || index}>
                                     <button onClick={() => handleEditIdea(idea)} className="w-full text-right p-3 border rounded-md text-sm hover:bg-muted transition-colors">
                                         <div className="flex justify-between items-center">
-                                           <p className="font-medium">{idea.title || idea.idea}</p>
-                                           <Badge variant={approvalStatusVariantMap[idea.approvalStatus || idea.status || 'draft'] || 'outline'}>
+                                           <p className="font-medium truncate">{idea.title || idea.idea}</p>
+                                           <Badge variant={approvalStatusVariantMap[idea.approvalStatus || idea.status || 'draft'] || 'outline'} className="flex-shrink-0">
                                                 {approvalStatusTranslation[idea.approvalStatus || idea.status || 'draft']}
                                            </Badge>
                                         </div>

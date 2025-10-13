@@ -11,7 +11,7 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Filter, Search, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 export default function UsersPage() {
@@ -41,35 +41,15 @@ export default function UsersPage() {
     }
 
     return (
-        <div className="space-y-8 p-4 sm:p-6 lg:p-8" dir="rtl">
-            {/* Header Section */}
-            <div>
-                <h1 className="text-3xl font-headline font-bold text-primary">إدارة المستخدمين</h1>
-                <p className="text-muted-foreground mt-2">عرض وتعديل بيانات جميع المستخدمين في النظام.</p>
+        <div className="space-y-6" dir="rtl">
+            <div className="flex flex-col gap-3">
+                <div>
+                  <h1 className="text-3xl font-headline font-bold">إدارة المستخدمين</h1>
+                  <p className="text-muted-foreground">عرض وتعديل بيانات جميع المستخدمين في النظام.</p>
+                </div>
+                <Separator/>
             </div>
 
-            {/* Action Bar with buttons */}
-            <Card className="border-dashed">
-                <CardContent>
-                    <div className="flex flex-wrap items-center gap-4">
-                        <Button variant="outline" size="sm" className="gap-1">
-                            <Search className="h-4 w-4" /> بحث
-                        </Button>
-                        <Button variant="outline" size="sm" className="gap-1">
-                            <Filter className="h-4 w-4" /> فلاتر
-                        </Button>
-                        <Button variant="outline" size="sm" className="gap-1">
-                            <Download className="h-4 w-4" /> تصدير CSV
-                        </Button>
-                        <div className="ms-auto" />
-                        <Button size="sm" variant="default">
-                            <PlusCircle className="h-4 w-4" /> إضافة مستخدم
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {/* Loader while data is loading */}
             {isLoading ? (
                 <div className="flex justify-center items-center h-64">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -77,15 +57,6 @@ export default function UsersPage() {
             ) : (
                 <UserList users={users || []} />
             )}
-
-            {/* Separator */}
-            <Separator />
-
-            {/* Footer with badges */}
-            <div className="flex items-center gap-2">
-                <Badge variant="outline" className="rounded-2xl px-3 py-1">دور: {role}</Badge>
-                <Badge variant="outline" className="rounded-2xl px-3 py-1">XFUSE</Badge>
-            </div>
         </div>
     );
 }

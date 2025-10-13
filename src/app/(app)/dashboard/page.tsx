@@ -29,7 +29,8 @@ const getStatsForRole = (role: UserRole, userId: string, clients: Client[] | nul
 
   switch (role) {
     case "moderator":
-      const myClients = clients.filter((c) => c.registeredBy === userId);
+    case "admin":
+      const myClients = clients.filter((c) => c.registeredBy === userId || role === 'admin');
       return [
         { title: "عملاء اليوم", value: myClients.filter((c) => c.registeredAt && new Date(c.registeredAt.seconds * 1000) >= todayStart).length, icon: Zap },
         { title: "العملاء النشطون", value: myClients.filter((c) => c.transferStatus === "active").length, icon: Users },
@@ -155,43 +156,30 @@ export default function DashboardPage() {
 
   const recentClients = clients
     ? [...clients]
-        .filter((c) => role === "moderator" && c.registeredBy === user.uid)
+        .filter((c) => (role === "moderator" && c.registeredBy === user.uid) || role === 'admin')
         .sort((a, b) => (b.registeredAt?.seconds || 0) - (a.registeredAt?.seconds || 0))
         .slice(0, 5)
     : [];
 
   return (
-    <div className="flex flex-col gap-8" dir="rtl">
-      {/* مسار تنقّل ومقدمة */}
+    <div className="flex flex-col gap-6" dir="rtl">
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <nav className="text-sm text-muted-foreground flex items-center gap-2">
-            <Link href="/" className="flex items-center gap-1 hover:text-foreground">
-              <Home className="h-4 w-4" /> الرئيسية
-            </Link>
-            <span>/</span>
-            <span className="text-foreground">لوحة التحكم</span>
+            <Home className="h-4 w-4" /> 
+            <span className="text-foreground">لوحة التحكم الرئيسية</span>
           </nav>
-
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="rounded-2xl px-3 py-1">الدور: {role}</Badge>
-            <Badge className="rounded-2xl px-3 py-1">XFUSE</Badge>
-          </div>
+          <Badge variant="outline" className="rounded-2xl px-3 py-1">الدور: {role}</Badge>
         </div>
-        <Separator />
       </div>
 
-      {/* هيدر مرحِّب بخلفية متدرجة خفيفة */}
       <Card className="overflow-hidden border-0 shadow-sm">
-        <div className="bg-gradient-to-l from-fuchsia-500/10 via-purple-500/10 to-pink-500/10">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-2xl sm:text-3xl font-headline">مرحباً, {user.displayName || user.email}!</CardTitle>
-            <p className="text-sm text-muted-foreground mt-2">هنا نظرة سريعة على أنشطتك اليوم.</p>
-          </CardHeader>
+        <div className="bg-gradient-to-l from-fuchsia-500/10 via-purple-500/10 to-pink-500/10 p-6">
+          <CardTitle className="text-2xl sm:text-3xl font-headline">مرحباً, {user.displayName || user.email}!</CardTitle>
+          <p className="text-sm text-muted-foreground mt-2">هنا نظرة سريعة على أنشطتك اليوم.</p>
         </div>
       </Card>
 
-      {/* بطاقات الإحصائيات — دون تغيير المنطق */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {isLoading
           ? Array(4)
@@ -200,28 +188,8 @@ export default function DashboardPage() {
           : stats.map((stat, index) => <StatCard key={index} title={stat.title} value={stat.value} icon={stat.icon} />)}
       </div>
 
-      {/* شريط أدوات واجهي أعلى القوائم */}
-      <Card className="border-dashed">
-        <CardContent className="py-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" className="gap-1">
-              <Filter className="h-4 w-4" /> فلاتر (واجهة فقط)
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1">
-              <RefreshCw className="h-4 w-4" /> تحديث العرض
-            </Button>
-            <Button variant="outline" size="sm" className="gap-1">
-              <Download className="h-4 w-4" /> تصدير CSV
-            </Button>
-            <div className="ms-auto" />
-            <Badge variant="outline" className="rounded-2xl px-3 py-1">قسم التسويق — Xfuse</Badge>
-          </div>
-        </CardContent>
-      </Card>
-
       <div className="grid gap-6 lg:grid-cols-2">
-         {/* مهامي القادمة */}
-        <Card>
+         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl font-headline">
                     <ListTodo className="text-primary" />
@@ -262,10 +230,9 @@ export default function DashboardPage() {
             </CardContent>
         </Card>
 
-        {/* أحدث العملاء — نحافظ على الشرط والمنطق */}
-        {role === "moderator" && (
+        {(role === "moderator" || role === "admin") && (
             <Card>
-            <CardHeader className="pb-2">
+            <CardHeader>
                 <CardTitle className="text-xl font-headline">أحدث العملاء</CardTitle>
             </CardHeader>
             <CardContent>
@@ -273,12 +240,28 @@ export default function DashboardPage() {
                 <div className="flex justify-center items-center h-64">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-                ) : (
+                ) : recentClients.length > 0 ? (
                 <ScrollArea className="h-[60vh] pe-2">
-                    {/* لا نغيّر أي props جوهرية */}
-                    <ClientList isPaginated={false} />
+                    <div className="space-y-3">
+                        {recentClients.map(client => (
+                            <Link href={`/clients/${client.id}`} key={client.id} className="block p-3 border rounded-lg hover:bg-muted transition-colors">
+                                <div className="flex justify-between items-center">
+                                    <p className="font-medium">{client.name}</p>
+                                    <Badge variant="secondary" className="text-xs">{client.prStatus || 'pending'}</Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">{client.businessName}</p>
+                            </Link>
+                        ))}
+                    </div>
                 </ScrollArea>
-                )}
+                ) : (
+                <div className="flex flex-col items-center justify-center h-64 text-center">
+                    <Users className="h-12 w-12 text-muted-foreground mb-2" />
+                    <p className="font-medium">لم يتم إضافة عملاء بعد.</p>
+                    <p className="text-sm text-muted-foreground">قم بإضافة عميل جديد للبدء.</p>
+                </div>
+                )
+              }
             </CardContent>
             </Card>
         )}
@@ -287,5 +270,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

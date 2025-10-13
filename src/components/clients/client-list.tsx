@@ -1,5 +1,3 @@
-
-
 "use client";
 
 import { useState } from "react";
@@ -14,7 +12,7 @@ import { Download, PlusCircle, Search } from "lucide-react";
 import { exportToExcel, exportToPDF } from "@/lib/export";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getTabsForRole } from "@/lib/roles";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query, where } from "firebase/firestore";
@@ -140,42 +138,45 @@ export default function ClientList({ isPaginated = true }: { isPaginated?: boole
 
     return (
         <Card>
-            <CardHeader className="flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-                 <div className="relative w-full max-w-sm">
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="ابحث بالاسم، الهاتف، أو الإيميل..." 
-                        className="pr-10"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                <div className="flex gap-2 w-full sm:w-auto">
-                    {(role === 'moderator' || role === 'admin') && (
-                       <AddClientDialog>
-                           <Button className="flex-1 sm:flex-none">
+            <CardHeader>
+                 <CardTitle>قائمة العملاء</CardTitle>
+                 <div className="flex flex-col sm:flex-row items-center gap-2 mt-4">
+                    <div className="relative w-full sm:flex-1">
+                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                            placeholder="ابحث بالاسم، الهاتف، أو الإيميل..." 
+                            className="pr-10"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex gap-2 w-full sm:w-auto">
+                        {(role === 'moderator' || role === 'admin') && (
+                        <AddClientDialog>
+                            <Button className="w-full sm:w-auto">
                                 <PlusCircle className="ms-2 h-4 w-4" />
                                 إضافة عميل
                             </Button>
-                       </AddClientDialog>
-                    )}
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className="flex-1 sm:flex-none">
-                                <Download className="ms-2 h-4 w-4" />
-                                تصدير
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => handleExport('excel')}>تصدير Excel</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExport('pdf')}>تصدير PDF</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
+                        </AddClientDialog>
+                        )}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" className="w-full sm:w-auto">
+                                    <Download className="ms-2 h-4 w-4" />
+                                    تصدير
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuItem onClick={() => handleExport('excel')}>تصدير Excel</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleExport('pdf')}>تصدير PDF</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                 </div>
             </CardHeader>
             <CardContent>
                 <Tabs value={activeTab} onValueChange={handleTabChange}>
-                    <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 sm:w-auto sm:inline-flex">
+                    <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 h-auto">
                         {tabs.map(tab => (
                             <TabsTrigger key={tab.value} value={tab.value}>{tab.label}</TabsTrigger>
                         ))}
